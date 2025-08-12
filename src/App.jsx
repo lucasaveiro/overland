@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Compass, Mountain, Tent, Truck, MapPin, CalendarClock, Image as ImageIcon } from "lucide-react";
-import AdminPage from "./pages/Admin.jsx"; // nova página
+import { Compass, Mountain, Tent, Truck, MapPin, CalendarClock, Camera as ImageIcon } from "lucide-react";
+import AdminPage from "./pages/Admin.jsx";
 import Lightbox from "./components/Lightbox.jsx";
-
 
 const API = {
   trips: "/.netlify/functions/trips",
@@ -48,16 +47,8 @@ export default function App() {
 
 function Home() {
   const [trips, setTrips] = useState([]);
-  const [regs, setRegs] = useState([]);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-
-  // junta todas as imagens de todos os passeios (ordem: futuros depois passados)
-  const galleryImages = useMemo(() => {
-  const all = [...upcoming, ...past];
-  return all.flatMap((t) => (t.images || []).map((src) => ({ src, alt: t.name })));
-}, [upcoming, past]);
-
 
   useEffect(() => {
     fetch(`${API.trips}?all=1`).then(r=>r.json()).then(d=>Array.isArray(d)&&setTrips(d)).catch(()=>setTrips([]));
@@ -66,10 +57,16 @@ function Home() {
   const upcoming = useMemo(() => trips.filter(t => isUpcoming(t.date_time)).sort((a,b)=>new Date(a.date_time)-new Date(b.date_time)), [trips]);
   const past = useMemo(() => trips.filter(t => !isUpcoming(t.date_time)).sort((a,b)=>new Date(b.date_time)-new Date(a.date_time)), [trips]);
 
+  const galleryImages = useMemo(() => {
+    const all = [...upcoming, ...past];
+    return all.flatMap((t) => (t.images || []).map((src) => ({ src, alt: t.name })));
+  }, [upcoming, past]);
+
   return (
     <>
       <Hero />
       <ValueProps />
+
       <section id="proximos" className="mt-12 md:mt-16">
         <SectionTitle icon={<CalendarClock className="w-5 h-5" />} title="Próximos passeios" subtitle="Inscreva-se para viver o overland em ritmo tranquilo." />
         {upcoming.length === 0 ? (
@@ -88,40 +85,38 @@ function Home() {
       </section>
 
       <section id="galeria" className="mt-16">
-  <SectionTitle icon={<ImageIcon className="w-5 h-5" />} title="Galeria recente" subtitle="Alguns registros dos nossos rolês offroad." />
+        <SectionTitle icon={<ImageIcon className="w-5 h-5" />} title="Galeria recente" subtitle="Alguns registros dos nossos rolês offroad." />
+        {galleryImages.length === 0 ? (
+          <p className="text-sm text-neutral-600">Sem fotos ainda.</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {galleryImages.map((img, i) => (
+              <button
+                key={`${img.src}-${i}`}
+                className="relative group"
+                onClick={() => { setLightboxIndex(i); setLightboxOpen(true); }}
+                aria-label={`Abrir foto ${i + 1}`}
+              >
+                <motion.img
+                  whileHover={{ scale: 1.02 }}
+                  src={img.src}
+                  alt={img.alt || ""}
+                  className="w-full h-36 object-cover rounded-2xl shadow-sm"
+                />
+                <span className="absolute inset-0 rounded-2xl ring-0 ring-white/0 group-hover:ring-2 group-hover:ring-white/60 transition" />
+              </button>
+            ))}
+          </div>
+        )}
 
-  {galleryImages.length === 0 ? (
-    <p className="text-sm text-neutral-600">Sem fotos ainda.</p>
-  ) : (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {galleryImages.map((img, i) => (
-        <button
-          key={`${img.src}-${i}`}
-          className="relative group"
-          onClick={() => { setLightboxIndex(i); setLightboxOpen(true); }}
-          aria-label={`Abrir foto ${i + 1}`}
-        >
-          <motion.img
-            whileHover={{ scale: 1.02 }}
-            src={img.src}
-            alt={img.alt || ""}
-            className="w-full h-36 object-cover rounded-2xl shadow-sm"
+        {lightboxOpen && (
+          <Lightbox
+            images={galleryImages}
+            startIndex={lightboxIndex}
+            onClose={() => setLightboxOpen(false)}
           />
-          <span className="absolute inset-0 rounded-2xl ring-0 ring-white/0 group-hover:ring-2 group-hover:ring-white/60 transition" />
-        </button>
-      ))}
-    </div>
-  )}
-
-  {lightboxOpen && (
-    <Lightbox
-      images={galleryImages}
-      startIndex={lightboxIndex}
-      onClose={() => setLightboxOpen(false)}
-    />
-  )}
-</section>
-
+        )}
+      </section>
     </>
   );
 }
@@ -157,6 +152,7 @@ function StyleBrand(){ return (<style>{`
 .brand-gradient{ background:linear-gradient(120deg,var(--moss) 0%,var(--brown) 100%); }
 .chip{ background:#f0ede6; border:1px solid #e4dfd3; }
 `}</style>); }
+
 function Header(){
   return (
     <header className="sticky top-0 z-30 backdrop-blur bg-[rgba(248,247,244,0.7)] border-b">
@@ -164,8 +160,8 @@ function Header(){
         <div className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-xl brand-gradient grid place-items-center text-white shadow"><Compass className="w-5 h-5" /></div>
           <div className="leading-tight">
-            <div className="font-semibold tracking-tight">OFFGRID Overland</div>
-            <div className="text-xs text-neutral-500">Passeios offroad em ritmo tranquilo</div>
+            <div className="font-semibold tracking-tight">Offgrid Overland</div>
+            <div className="text-xs text-neutral-500">Passeios familiares em ritmo tranquilo</div>
           </div>
         </div>
         <nav className="hidden md:flex items-center gap-6 text-sm">
@@ -177,6 +173,7 @@ function Header(){
     </header>
   );
 }
+
 function Footer(){
   return (
     <footer className="mt-20 border-t">
@@ -190,7 +187,6 @@ function Footer(){
         </div>
         <div className="flex gap-4">
           <a href="#proximos" className="hover:underline">Próximos passeios</a>
-          {/* link discreto de login do admin */}
           <Link to="/admin" className="text-neutral-500 hover:underline">Login do administrador</Link>
         </div>
       </div>
@@ -198,25 +194,52 @@ function Footer(){
   );
 }
 
-function Hero(){/* ...mantido igual ao anterior... */ return (
-  <section className="mt-8 md:mt-12">
-    <div className="relative overflow-hidden rounded-3xl border shadow-sm">
-      <div className="absolute inset-0 brand-gradient opacity-20" />
-      <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1800&auto=format&fit=crop" alt="Trilha offroad em paisagem de montanha" className="w-full h-[46vh] md:h-[58vh] object-cover" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 text-white">
-        <motion.h1 initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:0.6}} className="text-3xl md:text-5xl font-semibold tracking-tight">Overland tranquilo, paisagens e boa companhia</motion.h1>
-        <motion.p initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.1,duration:0.6}} className="mt-3 md:mt-4 text-sm md:text-base max-w-2xl text-white/90">Passeios offroad familiares por estradas de terra, com paradas para contemplar a natureza. Sem pressa, sem cobrança – apenas a experiência.</motion.p>
-        <div className="mt-4 md:mt-6 flex items-center gap-3">
-          <span className="bg-white text-[var(--moss)] px-3 py-1 rounded-full chip inline-flex items-center gap-1"><Mountain className="w-4 h-4" /> montanhas</span>
-          <span className="bg-white text-[var(--moss)] px-3 py-1 rounded-full chip inline-flex items-center gap-1"><Truck className="w-4 h-4" /> 4x4 & SUVs</span>
-          <span className="bg-white text-[var(--moss)] px-3 py-1 rounded-full chip inline-flex items-center gap-1"><Tent className="w-4 h-4" /> picnic & família</span>
+function Hero(){
+  return (
+    <section className="mt-8 md:mt-12">
+      <div className="relative overflow-hidden rounded-3xl border shadow-sm">
+        <div className="absolute inset-0 brand-gradient opacity-20" />
+        <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1800&auto=format&fit=crop" alt="Trilha offroad em paisagem de montanha" className="w-full h-[46vh] md:h-[58vh] object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 text-white">
+          <motion.h1 initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:0.6}} className="text-3xl md:text-5xl font-semibold tracking-tight">
+            Overland tranquilo, paisagens e boa companhia
+          </motion.h1>
+          <motion.p initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.1,duration:0.6}} className="mt-3 md:mt-4 text-sm md:text-base max-w-2xl text-white/90">
+            Passeios offroad familiares por estradas de terra, com paradas para contemplar a natureza. Sem pressa, sem cobrança – apenas a experiência.
+          </motion.p>
+          <div className="mt-4 md:mt-6 flex items-center gap-3">
+            <span className="bg-white text-[var(--moss)] px-3 py-1 rounded-full chip inline-flex items-center gap-1"><Mountain className="w-4 h-4" /> montanhas</span>
+            <span className="bg-white text-[var(--moss)] px-3 py-1 rounded-full chip inline-flex items-center gap-1"><Truck className="w-4 h-4" /> 4x4 & SUVs</span>
+            <span className="bg-white text-[var(--moss)] px-3 py-1 rounded-full chip inline-flex items-center gap-1"><Tent className="w-4 h-4" /> picnic & família</span>
+          </div>
         </div>
       </div>
+    </section>
+  );
+}
+
+function ValueProps() {
+  const items = [
+    { icon: <Mountain className="w-5 h-5" />, title: "Ritmo contemplativo", text: "Paradas frequentes para fotos e descanso. Aproveite o caminho." },
+    { icon: <Compass className="w-5 h-5" />, title: "Roteiros seguros", text: "Estradas de terra e vicinais com briefing prévio e comboio organizado." },
+    { icon: <Truck className="w-5 h-5" />, title: "Para família e amigos", text: "Bem-vindos SUVs e 4x4. Nível leve a moderado, sempre sem pressa." },
+  ];
+  return (
+    <div className="grid md:grid-cols-3 gap-4 mt-8">
+      {items.map((it, i) => (
+        <Card key={i} className="border shadow-sm">
+          <CardHeader className="pb-2 flex flex-row items-center gap-2">
+            <div className="h-9 w-9 rounded-xl bg-[var(--sand)] grid place-items-center text-[var(--moss)]">{it.icon}</div>
+            <CardTitle className="text-base">{it.title}</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-neutral-600 -mt-2">{it.text}</CardContent>
+        </Card>
+      ))}
     </div>
-  </section>
-);}
-function ValueProps(){/* ...idem ao anterior... */}
+  );
+}
+
 function SectionTitle({icon,title,subtitle}){ return (
   <div className="mb-4 md:mb-6">
     <div className="flex items-center gap-2">
