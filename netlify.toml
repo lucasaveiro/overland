@@ -3,13 +3,11 @@
   publish = "dist"
   functions = "netlify/functions"
 
-# Functions legadas sob /api
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
 
-# SPA fallback para permitir /admin funcionar direto
 [[redirects]]
   from = "/*"
   to = "/index.html"
