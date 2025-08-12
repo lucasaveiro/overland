@@ -126,8 +126,8 @@ function Header(){
         <div className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-xl brand-gradient grid place-items-center text-white shadow"><Compass className="w-5 h-5" /></div>
           <div className="leading-tight">
-            <div className="font-semibold tracking-tight">Offgrid Overland</div>
-            <div className="text-xs text-neutral-500">Passeios familiares em ritmo tranquilo</div>
+            <div className="font-semibold tracking-tight">OFFGRID Overland</div>
+            <div className="text-xs text-neutral-500">Passeios offroad em ritmo tranquilo</div>
           </div>
         </div>
         <nav className="hidden md:flex items-center gap-6 text-sm">
