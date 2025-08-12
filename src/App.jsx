@@ -3,6 +3,8 @@ import { Routes, Route, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Compass, Mountain, Tent, Truck, MapPin, CalendarClock, Image as ImageIcon } from "lucide-react";
 import AdminPage from "./pages/Admin.jsx"; // nova página
+import Lightbox from "./components/Lightbox.jsx";
+
 
 const API = {
   trips: "/.netlify/functions/trips",
@@ -47,6 +49,15 @@ export default function App() {
 function Home() {
   const [trips, setTrips] = useState([]);
   const [regs, setRegs] = useState([]);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // junta todas as imagens de todos os passeios (ordem: futuros depois passados)
+  const galleryImages = useMemo(() => {
+  const all = [...upcoming, ...past];
+  return all.flatMap((t) => (t.images || []).map((src) => ({ src, alt: t.name })));
+}, [upcoming, past]);
+
 
   useEffect(() => {
     fetch(`${API.trips}?all=1`).then(r=>r.json()).then(d=>Array.isArray(d)&&setTrips(d)).catch(()=>setTrips([]));
@@ -77,13 +88,40 @@ function Home() {
       </section>
 
       <section id="galeria" className="mt-16">
-        <SectionTitle icon={<ImageIcon className="w-5 h-5" />} title="Galeria recente" subtitle="Alguns registros dos nossos rolês offroad." />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[...upcoming.slice(0,2), ...past.slice(0,2)].flatMap(t => (t.images||[]).map((src,i)=>(
-            <motion.img whileHover={{ scale: 1.02 }} key={`${t.id}-${i}`} src={src} alt={t.name} className="w-full h-36 object-cover rounded-2xl shadow-sm" />
-          )))}
-        </div>
-      </section>
+  <SectionTitle icon={<ImageIcon className="w-5 h-5" />} title="Galeria recente" subtitle="Alguns registros dos nossos rolês offroad." />
+
+  {galleryImages.length === 0 ? (
+    <p className="text-sm text-neutral-600">Sem fotos ainda.</p>
+  ) : (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {galleryImages.map((img, i) => (
+        <button
+          key={`${img.src}-${i}`}
+          className="relative group"
+          onClick={() => { setLightboxIndex(i); setLightboxOpen(true); }}
+          aria-label={`Abrir foto ${i + 1}`}
+        >
+          <motion.img
+            whileHover={{ scale: 1.02 }}
+            src={img.src}
+            alt={img.alt || ""}
+            className="w-full h-36 object-cover rounded-2xl shadow-sm"
+          />
+          <span className="absolute inset-0 rounded-2xl ring-0 ring-white/0 group-hover:ring-2 group-hover:ring-white/60 transition" />
+        </button>
+      ))}
+    </div>
+  )}
+
+  {lightboxOpen && (
+    <Lightbox
+      images={galleryImages}
+      startIndex={lightboxIndex}
+      onClose={() => setLightboxOpen(false)}
+    />
+  )}
+</section>
+
     </>
   );
 }
