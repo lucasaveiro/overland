@@ -6,6 +6,7 @@ const API = {
   login: "/.netlify/functions/auth_login",
   me: "/.netlify/functions/auth_me",
   logout: "/.netlify/functions/auth_logout",
+  registrations: "/.netlify/functions/registrations",
 };
 
 const cn = (...c) => c.filter(Boolean).join(" ");
@@ -62,7 +63,7 @@ export default function AdminPage(){
       </div>
 
       {/* tabela futuros */}
-      <AdminTable title="Futuros" trips={fut} onEdit={setEditing} onDelete={async (id)=>{
+      <AdminTable title="Futuros" trips={fut} showParticipants onEdit={setEditing} onDelete={async (id)=>{
         if(!confirm("Remover este passeio?")) return;
         const res = await fetch(`${API.trips}?id=${id}`, { method:"DELETE", credentials:"include" });
         if(res.ok) setTrips(prev=>prev.filter(t=>t.id!==id)); else alert("Falha ao remover.");
@@ -116,7 +117,25 @@ function LoginForm({ onSuccess }){
   );
 }
 
-function AdminTable({ title, trips, onEdit, onDelete }){
+function AdminTable({ title, trips, onEdit, onDelete, showParticipants=false }){
+  const [open, setOpen] = useState({});
+  const [participants, setParticipants] = useState({});
+  const toggle = async(id)=>{
+    setOpen(o=>({ ...o, [id]: !o[id] }));
+    if(!participants[id]){
+      try{
+        const res = await fetch(`${API.registrations}?tripId=${id}`, { credentials:'include' });
+        if(res.ok){
+          const data = await res.json();
+          setParticipants(p=>({ ...p, [id]: data }));
+        } else {
+          setParticipants(p=>({ ...p, [id]: [] }));
+        }
+      }catch{
+        setParticipants(p=>({ ...p, [id]: [] }));
+      }
+    }
+  };
   return (
     <Card className="border shadow-sm">
       <CardHeader className="pb-2"><CardTitle className="text-base">{title}</CardTitle></CardHeader>
@@ -129,16 +148,38 @@ function AdminTable({ title, trips, onEdit, onDelete }){
               </tr></thead>
               <tbody>
                 {trips.slice().sort((a,b)=>new Date(a.date_time)-new Date(b.date_time)).map(t=>(
-                  <tr key={t.id} className="border-b last:border-0">
-                    <td className="py-2 pr-3 font-medium">{t.name || <span className="text-neutral-500">(sem nome)</span>}</td>
-                    <td className="py-2 pr-3">{new Intl.DateTimeFormat("pt-BR",{dateStyle:"medium", timeStyle:"short"}).format(new Date(t.date_time))}</td>
-                    <td className="py-2 pr-3">{t.location || <span className="text-neutral-500">—</span>}</td>
-                    <td className="py-2 pr-3">{(t.images||[]).length}</td>
-                    <td className="py-2 text-right">
-                      <Button variant="secondary" className="mr-2" onClick={()=>onEdit(t)}><Pencil className="w-4 h-4 mr-1" /> Editar</Button>
-                      <Button variant="destructive" onClick={()=>onDelete(t.id)}><Trash2 className="w-4 h-4 mr-1" /> Remover</Button>
-                    </td>
-                  </tr>
+                  <React.Fragment key={t.id}>
+                    <tr className="border-b last:border-0">
+                      <td className="py-2 pr-3 font-medium">{t.name || <span className="text-neutral-500">(sem nome)</span>}</td>
+                      <td className="py-2 pr-3">{new Intl.DateTimeFormat("pt-BR",{dateStyle:"medium", timeStyle:"short"}).format(new Date(t.date_time))}</td>
+                      <td className="py-2 pr-3">{t.location || <span className="text-neutral-500">—</span>}</td>
+                      <td className="py-2 pr-3">{(t.images||[]).length}</td>
+                      <td className="py-2 text-right">
+                        {showParticipants && <Button variant="secondary" className="mr-2" onClick={()=>toggle(t.id)}>{open[t.id]?"Esconder":"Participantes"}</Button>}
+                        <Button variant="secondary" className="mr-2" onClick={()=>onEdit(t)}><Pencil className="w-4 h-4 mr-1" /> Editar</Button>
+                        <Button variant="destructive" onClick={()=>onDelete(t.id)}><Trash2 className="w-4 h-4 mr-1" /> Remover</Button>
+                      </td>
+                    </tr>
+                    {showParticipants && open[t.id] && (
+                      <tr className="border-b last:border-0 bg-neutral-50">
+                        <td colSpan={5} className="p-3">
+                          {participants[t.id] ? (
+                            participants[t.id].length>0 ? (
+                              <ul className="space-y-1">
+                                {participants[t.id].map(p=>(
+                                  <li key={p.id}>
+                                    <span className="font-medium">{p.name}</span>
+                                    {p.email && ` - ${p.email}`}
+                                    {p.whatsapp && ` - ${p.whatsapp}`}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : <p className="text-sm text-neutral-600">Nenhum participante.</p>
+                          ) : <p className="text-sm text-neutral-600">Carregando...</p>}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
