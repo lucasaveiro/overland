@@ -92,7 +92,7 @@ export default function AdminPage(){
       {editing && <Dialog onClose={()=>setEditing(null)}>
         <h3 className="text-lg font-semibold mb-2">Editar passeio</h3>
 
-        <TripForm initial={{ id:editing.id, name:editing.name, dateTime:editing.date_time, location:editing.location, description:editing.description, images:editing.images||[], priceCar:editing.price_car, priceExtra:editing.price_extra }}
+        <TripForm initial={{ id:editing.id, name:editing.name, dateTime:editing.date_time, location:editing.location, description:editing.description, completeDescription:editing.complete_description, images:editing.images||[], priceCar:editing.price_car, priceExtra:editing.price_extra }}
           onCancel={()=>setEditing(null)}
           onSave={async (patch)=>{
             const res = await fetch(API.trips, { method:"PUT", credentials:"include", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(patch) });
@@ -194,10 +194,12 @@ function AdminTable({ title, trips, onEdit, onDelete, showParticipants=false }){
 
 function Dialog({ children, onClose }){
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-[90vw] max-w-xl shadow-2xl p-4" onClick={e=>e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40">
+      <div className="relative bg-white rounded-2xl w-[90vw] max-w-xl shadow-2xl p-4">
+        <button type="button" onClick={onClose} className="absolute top-3 right-3 text-neutral-500 hover:text-neutral-700">
+          <X className="w-5 h-5" />
+        </button>
         {children}
-        <div className="flex justify-end mt-3"><Button variant="secondary" onClick={onClose}>Fechar</Button></div>
       </div>
     </div>
   );
