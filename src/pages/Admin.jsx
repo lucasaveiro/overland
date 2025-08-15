@@ -81,6 +81,7 @@ export default function AdminPage(){
       {newTripOpen && <Dialog onClose={()=>setNewTripOpen(false)}>
         <h3 className="text-lg font-semibold mb-2">Novo passeio</h3>
         <TripForm initial={{ id: crypto.randomUUID(), name:"", dateTime:new Date().toISOString(), location:"", description:"", completeDescription:"", images:[], priceCar:"", priceExtra:"" }}
+
           onCancel={()=>setNewTripOpen(false)}
           onSave={async (created)=>{
             const res = await fetch(API.trips, { method:"POST", credentials:"include", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(created) });
@@ -90,7 +91,8 @@ export default function AdminPage(){
 
       {editing && <Dialog onClose={()=>setEditing(null)}>
         <h3 className="text-lg font-semibold mb-2">Editar passeio</h3>
-        <TripForm initial={{ id:editing.id, name:editing.name, dateTime:editing.date_time, location:editing.location, description:editing.description, completeDescription:editing.complete_description, images:editing.images||[], priceCar:editing.price_car, priceExtra:editing.price_extra }}
+
+        <TripForm initial={{ id:editing.id, name:editing.name, dateTime:editing.date_time, location:editing.location, description:editing.description, images:editing.images||[], priceCar:editing.price_car, priceExtra:editing.price_extra }}
           onCancel={()=>setEditing(null)}
           onSave={async (patch)=>{
             const res = await fetch(API.trips, { method:"PUT", credentials:"include", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(patch) });
