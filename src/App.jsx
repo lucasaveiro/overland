@@ -74,7 +74,6 @@ function Home() {
     <>
       <Hero />
       <ValueProps />
-      <VehicleLevels />
 
       <section id="proximos" className="mt-12 md:mt-16">
         <SectionTitle icon={<CalendarClock className="w-5 h-5" />} title="Próximos passeios" subtitle="Inscreva-se para viver o overland em ritmo tranquilo." />
@@ -88,6 +87,8 @@ function Home() {
           </div>
         )}
       </section>
+
+      <VehicleLevels />
 
       <section id="galeria" className="mt-16">
         <SectionTitle icon={<ImageIcon className="w-5 h-5" />} title="Galeria recente" subtitle="Alguns registros dos nossos rolês offroad." />
