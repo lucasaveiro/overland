@@ -329,7 +329,7 @@ function ValueProps() {
 function VehicleLevels() {
   const levels = [
     {
-      title: "Categoria 1 – Off-road Leve / SUV Urbano",
+      title: "Nível 1 – SUV/Leve",
       profile:
         "Veículos com tração 4x4 ou AWD, mas projetados para conforto e uso predominantemente urbano, com alguma aptidão em estradas de terra e pisos irregulares. Limitados em ângulos de ataque/saída e altura livre do solo.",
       requirements: [
@@ -344,7 +344,7 @@ function VehicleLevels() {
         "Jeep Renegade Trailhawk 2.0 turbo diesel 4x4 2019; Commander Overland 2.0 turbo diesel 4x4 2022",
     },
     {
-      title: "Categoria 2 – Off-road Moderado / Picapes e SUVs Médios",
+      title: "Nível 2 - 4x4 Médio",
       profile:
         "Veículos que equilibram uso rodoviário e off-road, aptos para trilhas médias, areia, lama leve e travessias rasas. Já contam com reduzida, estrutura mais robusta e altura livre superior.",
       requirements: [
@@ -360,7 +360,7 @@ function VehicleLevels() {
         "Ram Rampage Rebel 2.0 turbo diesel 4x4 2022; Nissan Frontier XE 2.4 turbo 2022; Pajero TR4 2.0 gasolina 4x4 2012",
     },
     {
-      title: "Categoria 3 – Off-road Avançado / Expedição Pesada",
+      title: "Nível 3 - 4x4 Pesado",
       profile:
         "Veículos preparados de fábrica ou facilmente adaptáveis para trilhas pesadas e expedições, com boa articulação de suspensão, altura livre elevada, bloqueios diferenciais opcionais e grande robustez mecânica.",
       requirements: [
@@ -375,7 +375,7 @@ function VehicleLevels() {
         "Pajero Dakar 3.2 HPE turbo diesel 2018; Ranger XLT 3.0 V6 diesel 4x4 2024; Ram 1500 Rebel V8 gasolina 2020; Ram 2500 6.7 turbo diesel 4x4 2020",
     },
     {
-      title: "Categoria 4 – Off-road Extremo / Trial e Rock Crawling",
+      title: "Nível 4 – 4x4 Extremo",
       profile:
         "Veículos com projeto ou preparo para enfrentar obstáculos severos, como pedras, lama profunda e subidas radicais, com máxima articulação e tração. São os mais indicados para aventuras pesadas e terrenos hostis.",
       requirements: [
