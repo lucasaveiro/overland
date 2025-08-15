@@ -341,7 +341,7 @@ function VehicleLevels() {
         "Sistema eletrônico de tração (controle de descida, terrain select), mas sem bloqueios mecânicos.",
       ],
       examples:
-        "Jeep Renegade 4x4 - Jeep Compass 4x4 - Mitsubishi ASX 4x4 - Jeep Commander 4x4",
+        "Jeep Renegade 4x4 - Jeep Compass 4x4 - Mitsubishi ASX 4x4 - Jeep Commander 4x4 - Fiat Toro 4x4",
     },
     {
       title: "Nível 2 - 4x4 Médio",
@@ -357,7 +357,7 @@ function VehicleLevels() {
         "Sem bloqueios diferenciais mecânicos (ou apenas traseiro eletrônico opcional).",
       ],
       examples:
-        "- Ram Rampage 4x4 - Chevrolet S10 LS/LT/LTZ - Mitsubishi L200 Triton GLX/GLS/Outdoor - Toyota Hilux SR/SRV - Nissan Frontier - Volkswagen Amarok Comfortline/Highline - Pajero TR4 4x4 - Fiat Titano Volcano/Ranch",
+        "- Ram Rampage 4x4 - Chevrolet S10 LS/LT/LTZ - Mitsubishi L200 Triton GLX/GLS/Outdoor - Toyota Hilux SR/SRV - Nissan Frontier S/SE/XE - Volkswagen Amarok Comfortline/Highline - Pajero TR4 4x4 - Fiat Titano Volcano/Ranch",
     },
     {
       title: "Nível 3 - 4x4 Pesado",
@@ -372,7 +372,7 @@ function VehicleLevels() {
         "Mecânica confiável para uso extremo.",
       ],
       examples:
-        "Pajero Dakar - Chevrolet S10 HighCountry - Ford Ranger 4x4 - Ram 1500 - Ram 2500 - Mitsubishi L200 Triton Sport HPE-S - Toyota Hilux SRX - Volkswagen Amarok Extreme V6",
+        "Pajero Dakar - Chevrolet S10 HighCountry - Ford Ranger Storm/Limited - Ram 1500 - Ram 2500 - Nissan Frontier Attack/4Pro-X/Platinum - Mitsubishi L200 Triton Sport HPE-S - Toyota Hilux SRX - Volkswagen Amarok Extreme V6",
     },
     {
       title: "Nível 4 – 4x4 Extremo",
