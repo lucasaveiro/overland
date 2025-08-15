@@ -158,7 +158,13 @@ function TripPage() {
 
   const date = new Date(trip.date_time);
   const formatted = new Intl.DateTimeFormat("pt-BR",{dateStyle:"full", timeStyle:"short"}).format(date);
-  const paragraphs = (trip.description || "").split(/\n+/).map((p,i)=>(<p key={i} className="mt-2">{p}</p>));
+  const paragraphs = (trip.complete_description || trip.description || "")
+    .split(/\n+/)
+    .map((p, i) => (
+      <p key={i} className="mt-2">
+        {p}
+      </p>
+    ));
 
 
   return (
