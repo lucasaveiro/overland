@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Compass, Mountain, Tent, Truck, MapPin, CalendarClock, Camera as ImageIcon } from "lucide-react";
 import AdminPage from "./pages/Admin.jsx";
@@ -38,6 +38,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/passeio/:id" element={<TripPage />} />
         </Routes>
       </main>
       <Footer />
@@ -74,11 +75,7 @@ function Home() {
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
             {upcoming.map(trip => (
-              <TripCard key={trip.id} trip={trip} onSubmit={async (payload) => {
-                const res = await fetch(API.register, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, tripId: trip.id }) });
-                if (res.ok) alert("Inscrição recebida! Entraremos em contato.");
-                else alert("Não foi possível enviar sua inscrição. Tente novamente.");
-              }} />
+              <TripCard key={trip.id} trip={trip} />
             ))}
           </div>
         )}
@@ -121,29 +118,95 @@ function Home() {
   );
 }
 
-function TripCard({ trip, onSubmit }) {
-  const [name, setName] = useState(""); const [whatsapp, setWhatsapp] = useState(""); const [email, setEmail] = useState("");
+function TripCard({ trip }) {
   const date = new Date(trip.date_time);
   const formatted = new Intl.DateTimeFormat("pt-BR",{dateStyle:"full", timeStyle:"short"}).format(date);
   return (
-    <Card className="overflow-hidden border shadow-sm">
-      {trip.images?.[0] && <img src={trip.images[0]} alt={trip.name} className="w-full h-44 object-cover" />}
-      <CardContent className="p-4">
-        <h3 className="text-lg font-semibold tracking-tight">{trip.name}</h3>
-        <div className="flex items-center gap-2 text-sm text-neutral-600 mt-1"><CalendarClock className="w-4 h-4" /><span>{formatted}</span></div>
-        <div className="flex items-center gap-2 text-sm text-neutral-600 mt-1"><MapPin className="w-4 h-4" /><span>{trip.location}</span></div>
-        <p className="text-sm text-neutral-600 mt-3">{trip.description}</p>
-        <form className="grid md:grid-cols-3 gap-3 mt-4" onSubmit={(e)=>{e.preventDefault(); if(!name||!whatsapp||!email) return alert("Preencha todos os campos."); onSubmit({name,whatsapp,email}); setName(""); setWhatsapp(""); setEmail("");}}>
-          <div><Label htmlFor={`nome-${trip.id}`}>Nome</Label><Input id={`nome-${trip.id}`} value={name} onChange={e=>setName(e.target.value)} placeholder="Seu nome" /></div>
-          <div><Label htmlFor={`zap-${trip.id}`}>WhatsApp</Label><Input id={`zap-${trip.id}`} value={whatsapp} onChange={e=>setWhatsapp(e.target.value)} placeholder="(11) 98765-4321" /></div>
-          <div><Label htmlFor={`email-${trip.id}`}>E-mail</Label>
-            <div className="flex gap-2"><Input id={`email-${trip.id}`} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@email.com" />
-              <Button type="submit">Inscrever</Button>
-            </div>
+    <Link to={`/passeio/${trip.id}`} className="block group">
+      <Card className="overflow-hidden border shadow-sm relative">
+        {trip.images?.[0] && <img src={trip.images[0]} alt={trip.name} className="w-full h-44 object-cover" />}
+        <CardContent className="p-4">
+          <h3 className="text-lg font-semibold tracking-tight">{trip.name}</h3>
+          <div className="flex items-center gap-2 text-sm text-neutral-600 mt-1"><CalendarClock className="w-4 h-4" /><span>{formatted}</span></div>
+          <div className="flex items-center gap-2 text-sm text-neutral-600 mt-1"><MapPin className="w-4 h-4" /><span>{trip.location}</span></div>
+          <p className="text-sm text-neutral-600 mt-3">{trip.description}</p>
+        </CardContent>
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition">
+          <span className="inline-flex items-center justify-center gap-1.5 rounded-2xl px-3 py-2 text-sm bg-[var(--moss)] text-white">Participe</span>
+        </div>
+      </Card>
+    </Link>
+  );
+}
+
+function TripPage() {
+  const { id } = useParams();
+  const [trip, setTrip] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [email, setEmail] = useState("");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  useEffect(() => {
+    fetch(`${API.trips}?id=${id}`).then(r=>r.json()).then(d=>{ setTrip(d); setLoading(false); }).catch(()=>setLoading(false));
+  }, [id]);
+
+  if (loading) return <div className="py-10 text-center text-neutral-600">Carregando…</div>;
+  if (!trip) return <div className="py-10 text-center text-neutral-600">Passeio não encontrado.</div>;
+
+  const date = new Date(trip.date_time);
+  const formatted = new Intl.DateTimeFormat("pt-BR",{dateStyle:"full", timeStyle:"short"}).format(date);
+  const paragraphs = (trip.complete_description || "").split(/\n+/).map((p,i)=>(<p key={i} className="mt-2">{p}</p>));
+
+  return (
+    <div className="py-8 max-w-3xl mx-auto">
+      {trip.images?.[0] && <img src={trip.images[0]} alt={trip.name} className="w-full h-64 object-cover rounded-3xl shadow-sm" />}
+      <h1 className="text-2xl font-semibold mt-4">{trip.name}</h1>
+      <div className="flex items-center gap-2 text-sm text-neutral-600 mt-1"><CalendarClock className="w-4 h-4" /><span>{formatted}</span></div>
+      <div className="flex items-center gap-2 text-sm text-neutral-600 mt-1"><MapPin className="w-4 h-4" /><span>{trip.location}</span></div>
+      <div className="mt-4 text-neutral-700">{paragraphs}</div>
+      <div className="mt-4 text-sm text-neutral-700 space-y-1">
+        {trip.price_car && <div>Preço por carro (2 pessoas): <span className="font-medium">{trip.price_car}</span></div>}
+        {trip.price_extra && <div>Preço por pessoa adicional: <span className="font-medium">{trip.price_extra}</span></div>}
+      </div>
+
+      {trip.images?.length>1 && (
+        <section className="mt-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {trip.images.map((src,i)=>(
+              <button key={i} className="relative group" onClick={()=>{ setLightboxIndex(i); setLightboxOpen(true); }}>
+                <img src={src} alt="" className="w-full h-32 object-cover rounded-xl" />
+              </button>
+            ))}
           </div>
-        </form>
-      </CardContent>
-    </Card>
+          {lightboxOpen && (
+            <Lightbox
+              images={trip.images.map(s=>({src:s, alt:trip.name}))}
+              startIndex={lightboxIndex}
+              onClose={()=>setLightboxOpen(false)}
+            />
+          )}
+        </section>
+      )}
+
+      <form className="grid md:grid-cols-3 gap-3 mt-8" onSubmit={async (e)=>{
+        e.preventDefault();
+        if(!name||!whatsapp||!email) return alert("Preencha todos os campos.");
+        const res = await fetch(API.register, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ name, whatsapp, email, tripId: trip.id }) });
+        if(res.ok){ alert("Inscrição recebida! Entraremos em contato."); setName(""); setWhatsapp(""); setEmail(""); }
+        else alert("Não foi possível enviar sua inscrição. Tente novamente.");
+      }}>
+        <div><Label htmlFor="nome">Nome</Label><Input id="nome" value={name} onChange={e=>setName(e.target.value)} placeholder="Seu nome" /></div>
+        <div><Label htmlFor="zap">WhatsApp</Label><Input id="zap" value={whatsapp} onChange={e=>setWhatsapp(e.target.value)} placeholder="(11) 98765-4321" /></div>
+        <div><Label htmlFor="email">E-mail</Label>
+          <div className="flex gap-2"><Input id="email" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@email.com" />
+            <Button type="submit">Inscrever</Button>
+          </div>
+        </div>
+      </form>
+    </div>
   );
 }
 

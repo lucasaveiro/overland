@@ -52,9 +52,19 @@ export async function handler(event) {
   try {
     if (!supabaseUrl || !serviceKey) return json(500, { error: 'Missing SUPABASE env vars' }, event)
 
-    // Público: listar passeios
+    // Público: listar ou obter passeio específico
     if (event.httpMethod === 'GET') {
       const params = event.queryStringParameters || {}
+      const id = params.id
+      if (id) {
+        const { data, error } = await supabase
+          .from('trips')
+          .select('*')
+          .eq('id', id)
+          .single()
+        if (error) return json(404, { error: error.message }, event)
+        return json(200, data, event)
+      }
       const all = params.all === '1' || params.all === 'true'
       const upcoming = params.upcoming === '1' || params.upcoming === 'true'
       let q = supabase.from('trips').select('*')
@@ -76,7 +86,10 @@ export async function handler(event) {
         date_time: body.dateTime || body.date_time,
         location: body.location || null,
         description: body.description || null,
+        complete_description: body.completeDescription || body.complete_description || null,
         images: body.images || [],
+        price_car: body.priceCar ?? body.price_car ?? null,
+        price_extra: body.priceExtra ?? body.price_extra ?? null,
       }
       if (!payload.name || !payload.date_time) return json(400, { error: 'name and date_time are required' }, event)
       const { data, error } = await supabase.from('trips').insert(payload).select().single()
@@ -92,7 +105,10 @@ export async function handler(event) {
         date_time: body.dateTime || body.date_time,
         location: body.location,
         description: body.description,
+        complete_description: body.completeDescription ?? body.complete_description,
         images: body.images || [],
+        price_car: body.priceCar ?? body.price_car,
+        price_extra: body.priceExtra ?? body.price_extra,
       }
       const { data, error } = await supabase.from('trips').update(patch).eq('id', body.id).select().single()
       if (error) return json(500, { error: error.message }, event)
