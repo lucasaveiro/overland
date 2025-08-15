@@ -29,6 +29,13 @@ function Label({ htmlFor, children }){ return <label htmlFor={htmlFor} className
 
 const isUpcoming = (iso) => new Date(iso).getTime() >= Date.now();
 
+const difficultyColors = {
+  "Nível 1 – SUV/Leve": "bg-blue-600 text-white",
+  "Nível 2 – 4x4 Médio": "bg-green-600 text-white",
+  "Nível 3 – 4x4 Pesado": "bg-yellow-400 text-black",
+  "Nível 4 – Off-road Extremo": "bg-black text-white",
+};
+
 export default function App() {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--fg)]">
@@ -124,7 +131,14 @@ function TripCard({ trip }) {
   return (
     <Link to={`/passeio/${trip.id}`} className="block group">
       <Card className="overflow-hidden border shadow-sm relative">
-        {trip.images?.[0] && <img src={trip.images[0]} alt={trip.name} className="w-full h-44 object-cover" />}
+        {trip.images?.[0] && (
+          <div className="relative">
+            <img src={trip.images[0]} alt={trip.name} className="w-full h-44 object-cover" />
+            {trip.difficulty && (
+              <span className={`absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-medium ${difficultyColors[trip.difficulty] || 'bg-neutral-500 text-white'}`}>{trip.difficulty}</span>
+            )}
+          </div>
+        )}
         <CardContent className="p-4">
           <h3 className="text-lg font-semibold tracking-tight">{trip.name}</h3>
           <div className="flex items-center gap-2 text-sm text-neutral-600 mt-1"><CalendarClock className="w-4 h-4" /><span>{formatted}</span></div>

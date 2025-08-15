@@ -88,6 +88,7 @@ export async function handler(event) {
         description: body.description || null,
         complete_description: body.completeDescription || body.complete_description || null,
         images: body.images || [],
+        difficulty: body.difficulty || null,
         price_car: body.priceCar ?? body.price_car ?? null,
         price_extra: body.priceExtra ?? body.price_extra ?? null,
       }
@@ -107,6 +108,7 @@ export async function handler(event) {
         description: body.description,
         complete_description: body.completeDescription ?? body.complete_description,
         images: body.images || [],
+        difficulty: body.difficulty,
         price_car: body.priceCar ?? body.price_car,
         price_extra: body.priceExtra ?? body.price_extra,
       }

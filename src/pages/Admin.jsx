@@ -80,7 +80,7 @@ export default function AdminPage(){
       {/* dialogs */}
       {newTripOpen && <Dialog onClose={()=>setNewTripOpen(false)}>
         <h3 className="text-lg font-semibold mb-2">Novo passeio</h3>
-        <TripForm initial={{ id: crypto.randomUUID(), name:"", dateTime:new Date().toISOString(), location:"", description:"", completeDescription:"", images:[], priceCar:"", priceExtra:"" }}
+        <TripForm initial={{ id: crypto.randomUUID(), name:"", dateTime:new Date().toISOString(), location:"", difficulty:"", description:"", completeDescription:"", images:[], priceCar:"", priceExtra:"" }}
 
           onCancel={()=>setNewTripOpen(false)}
           onSave={async (created)=>{
@@ -92,7 +92,7 @@ export default function AdminPage(){
       {editing && <Dialog onClose={()=>setEditing(null)}>
         <h3 className="text-lg font-semibold mb-2">Editar passeio</h3>
 
-        <TripForm initial={{ id:editing.id, name:editing.name, dateTime:editing.date_time, location:editing.location, description:editing.description, completeDescription:editing.complete_description, images:editing.images||[], priceCar:editing.price_car, priceExtra:editing.price_extra }}
+        <TripForm initial={{ id:editing.id, name:editing.name, dateTime:editing.date_time, location:editing.location, difficulty:editing.difficulty, description:editing.description, completeDescription:editing.complete_description, images:editing.images||[], priceCar:editing.price_car, priceExtra:editing.price_extra }}
           onCancel={()=>setEditing(null)}
           onSave={async (patch)=>{
             const res = await fetch(API.trips, { method:"PUT", credentials:"include", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(patch) });
@@ -213,11 +213,21 @@ function TripForm({ initial, onSave, onCancel }){
   return (
     <form className="grid gap-3" onSubmit={(e)=>{ e.preventDefault(); if(!form.name) return alert("Defina um nome."); if(!form.dateTime) return alert("Defina data e hora."); onSave(form); }}>
       <div><Label>Nome do passeio</Label><Input value={form.name} onChange={e=>update({name:e.target.value})} placeholder="Ex.: Estrada-Parque Serra da Canastra" /></div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div><Label>Data e hora</Label><Input type="datetime-local" value={toLocalInputValue(form.dateTime)} onChange={e=>update({dateTime: new Date(e.target.value).toISOString()})} /></div>
-        <div><Label>Local</Label><Input value={form.location} onChange={e=>update({location:e.target.value})} placeholder="Cidade / Região" /></div>
-      </div>
-      <div><Label>Descrição</Label><Textarea rows={4} value={form.description} onChange={e=>update({description:e.target.value})} placeholder="Resumo do roteiro, nível e recomendações." /></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div><Label>Data e hora</Label><Input type="datetime-local" value={toLocalInputValue(form.dateTime)} onChange={e=>update({dateTime: new Date(e.target.value).toISOString()})} /></div>
+          <div><Label>Local</Label><Input value={form.location} onChange={e=>update({location:e.target.value})} placeholder="Cidade / Região" /></div>
+        </div>
+        <div>
+          <Label>Dificuldade</Label>
+          <select value={form.difficulty} onChange={e=>update({difficulty:e.target.value})} className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)] border-neutral-300">
+            <option value="">Selecione</option>
+            <option value="Nível 1 – SUV/Leve">Nível 1 – SUV/Leve</option>
+            <option value="Nível 2 – 4x4 Médio">Nível 2 – 4x4 Médio</option>
+            <option value="Nível 3 – 4x4 Pesado">Nível 3 – 4x4 Pesado</option>
+            <option value="Nível 4 – Off-road Extremo">Nível 4 – Off-road Extremo</option>
+          </select>
+        </div>
+        <div><Label>Descrição</Label><Textarea rows={4} value={form.description} onChange={e=>update({description:e.target.value})} placeholder="Resumo do roteiro, nível e recomendações." /></div>
       <div><Label>Descrição completa</Label><Textarea rows={8} value={form.completeDescription} onChange={e=>update({completeDescription:e.target.value})} placeholder="Detalhes completos do passeio." /></div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div><Label>Preço por carro (2 pessoas)</Label><Input value={form.priceCar} onChange={e=>update({priceCar:e.target.value})} placeholder="R$ 0,00" /></div>
