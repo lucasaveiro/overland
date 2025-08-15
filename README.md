@@ -101,6 +101,9 @@ create table if not exists public.trips (
   date_time timestamptz not null,
   location text,
   description text,
+  complete_description text,
+  price_car numeric(10,2),
+  price_extra numeric(10,2),
   images jsonb default '[]'::jsonb,
   created_at timestamptz default now()
 );
@@ -195,10 +198,10 @@ GET /.netlify/functions/trips?all=1
 Lista passeios (público).
 
 POST /.netlify/functions/trips (requer sessão)
-Body: { id?, name, dateTime, location?, description?, images?[] }
+Body: { id?, name, dateTime, location?, description?, completeDescription?, images?[], priceCar?, priceExtra? }
 
 PUT /.netlify/functions/trips (requer sessão)
-Body: { id, name?, dateTime?, location?, description?, images?[] }
+Body: { id, name?, dateTime?, location?, description?, completeDescription?, images?[], priceCar?, priceExtra? }
 
 DELETE /.netlify/functions/trips?id=UUID (requer sessão)
 

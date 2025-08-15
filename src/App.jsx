@@ -160,6 +160,7 @@ function TripPage() {
   const formatted = new Intl.DateTimeFormat("pt-BR",{dateStyle:"full", timeStyle:"short"}).format(date);
   const paragraphs = (trip.description || "").split(/\n+/).map((p,i)=>(<p key={i} className="mt-2">{p}</p>));
 
+
   return (
     <div className="py-8 max-w-3xl mx-auto">
       {trip.images?.[0] && <img src={trip.images[0]} alt={trip.name} className="w-full h-64 object-cover rounded-3xl shadow-sm" />}
