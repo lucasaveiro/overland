@@ -341,7 +341,7 @@ function VehicleLevels() {
         "Sistema eletrônico de tração (controle de descida, terrain select), mas sem bloqueios mecânicos.",
       ],
       examples:
-        "Jeep Renegade Trailhawk 2.0 turbo diesel 4x4 2019; Commander Overland 2.0 turbo diesel 4x4 2022",
+        "Jeep Renegade 4x4 - Jeep Compass 4x4 - Mitsubishi ASX 4x4 - Jeep Commander 4x4",
     },
     {
       title: "Nível 2 - 4x4 Médio",
@@ -357,7 +357,7 @@ function VehicleLevels() {
         "Sem bloqueios diferenciais mecânicos (ou apenas traseiro eletrônico opcional).",
       ],
       examples:
-        "Ram Rampage Rebel 2.0 turbo diesel 4x4 2022; Nissan Frontier XE 2.4 turbo 2022; Pajero TR4 2.0 gasolina 4x4 2012",
+        "- Ram Rampage 4x4 - Chevrolet S10 LS/LT/LTZ - Mitsubishi L200 Triton GLX/GLS/Outdoor - Toyota Hilux SR/SRV - Nissan Frontier - Volkswagen Amarok Comfortline/Highline - Pajero TR4 4x4 - Fiat Titano Volcano/Ranch",
     },
     {
       title: "Nível 3 - 4x4 Pesado",
@@ -372,7 +372,7 @@ function VehicleLevels() {
         "Mecânica confiável para uso extremo.",
       ],
       examples:
-        "Pajero Dakar 3.2 HPE turbo diesel 2018; Ranger XLT 3.0 V6 diesel 4x4 2024; Ram 1500 Rebel V8 gasolina 2020; Ram 2500 6.7 turbo diesel 4x4 2020",
+        "Pajero Dakar - Chevrolet S10 HighCountry - Ford Ranger 4x4 - Ram 1500 - Ram 2500 - Mitsubishi L200 Triton Sport HPE-S - Toyota Hilux SRX - Volkswagen Amarok Extreme V6",
     },
     {
       title: "Nível 4 – 4x4 Extremo",
@@ -387,7 +387,7 @@ function VehicleLevels() {
         "Pode ter snorkel, guincho, proteções integrais e pneus MT de fábrica ou instalados.",
       ],
       examples:
-        "Suzuki Jimny 1.5 Sierra 4x4 2022; Troller T4 3.2 diesel 4x4 2018; Jeep Wrangler 3.6 gasolina 4x4 2016",
+        "Suzuki Jimny 4x4 - Troller T4 - Jeep Wrangler",
     },
   ];
 
