@@ -285,7 +285,7 @@ function Hero(){
     <section className="mt-8 md:mt-12">
       <div className="relative overflow-hidden rounded-3xl border shadow-sm">
         <div className="absolute inset-0 brand-gradient opacity-20" />
-        <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1800&auto=format&fit=crop" alt="Trilha offroad em paisagem de montanha" className="w-full h-[46vh] md:h-[58vh] object-cover" />
+        <img src="https://images.unsplash.com/photo-1627490597661-a905d22ec1fa?q=80&w=1470&auto=format&fit=crop" alt="Trilha offroad em paisagem de montanha" className="w-full h-[46vh] md:h-[58vh] object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 text-white">
           <motion.h1 initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:0.6}} className="text-3xl md:text-5xl font-semibold tracking-tight">
