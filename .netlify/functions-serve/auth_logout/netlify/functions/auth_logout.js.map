@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "sources": ["../../workspaces/overland/netlify/functions/auth_logout.mjs"],
+  "sourceRoot": "/tmp/tmp-13217-BVKZLyzOmIQQ",
+  "sourcesContent": ["const json = (status, data, event) => {\n  const origin = event?.headers?.origin || ''\n  const cors = {\n    'Content-Type': 'application/json',\n    'Access-Control-Allow-Origin': origin || '*',\n    'Access-Control-Allow-Credentials': 'true',\n    'Access-Control-Allow-Headers': 'Content-Type',\n    'Access-Control-Allow-Methods': 'POST,OPTIONS',\n    'Vary': 'Origin'\n  }\n  return { statusCode: status, headers: cors, body: JSON.stringify(data) }\n}\nexport async function handler(event){\n  if (event.httpMethod === 'OPTIONS') return json(200, {}, event)\n  // expira o cookie\n  return {\n    ...json(200, { ok: true }, event),\n    headers: { ...json(200, {}, event).headers, 'Set-Cookie': 'session=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict' }\n  }\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,IAAM,OAAO,CAAC,QAAQ,MAAM,UAAU;AACpC,QAAM,SAAS,OAAO,SAAS,UAAU;AACzC,QAAM,OAAO;AAAA,IACX,gBAAgB;AAAA,IAChB,+BAA+B,UAAU;AAAA,IACzC,oCAAoC;AAAA,IACpC,gCAAgC;AAAA,IAChC,gCAAgC;AAAA,IAChC,QAAQ;AAAA,EACV;AACA,SAAO,EAAE,YAAY,QAAQ,SAAS,MAAM,MAAM,KAAK,UAAU,IAAI,EAAE;AACzE;AACA,eAAsB,QAAQ,OAAM;AAClC,MAAI,MAAM,eAAe,UAAW,QAAO,KAAK,KAAK,CAAC,GAAG,KAAK;AAE9D,SAAO;AAAA,IACL,GAAG,KAAK,KAAK,EAAE,IAAI,KAAK,GAAG,KAAK;AAAA,IAChC,SAAS,EAAE,GAAG,KAAK,KAAK,CAAC,GAAG,KAAK,EAAE,SAAS,cAAc,yDAAyD;AAAA,EACrH;AACF;",
+  "names": []
+}

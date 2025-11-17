@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { forwardRef, useEffect, useState } from "react";
 import { Pencil, Plus, Trash2, Image as ImageIcon, Save, X, KeyRound, CalendarClock, MapPin } from "lucide-react";
+import { NumericFormat } from "react-number-format";
 
 const API = {
   trips: "/.netlify/functions/trips",
@@ -23,11 +24,40 @@ function Card({ className = "", children }) { return <div className={cn("rounded
 function CardHeader({ className = "", children }) { return <div className={cn("p-4", className)}>{children}</div>; }
 function CardContent({ className = "", children }) { return <div className={cn("p-4", className)}>{children}</div>; }
 function CardTitle({ className = "", children }) { return <div className={cn("text-lg font-semibold", className)}>{children}</div>; }
-function Input(props){ return <input {...props} className={cn("w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)] border-neutral-300", props.className)} />; }
+const Input = forwardRef(function Input(props, ref){
+  return <input ref={ref} {...props} className={cn("w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)] border-neutral-300", props.className)} />;
+});
 function Label({ htmlFor, children }){ return <label htmlFor={htmlFor} className="block text-sm font-medium mb-1">{children}</label>; }
 
 const isUpcoming = (iso) => new Date(iso).getTime() >= Date.now();
 const toLocalInputValue = (date) => { if(!date) return ""; const d=new Date(date); const p=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
+
+const parsePriceValue = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  const cleaned = String(value).trim().replace(/[^\d,.-]/g, "");
+  if (!cleaned) return null;
+  const hasComma = cleaned.includes(",");
+  const dotMatches = cleaned.match(/\./g) || [];
+  let normalized = cleaned;
+  if (hasComma) {
+    normalized = cleaned.replace(/\./g, "").replace(",", ".");
+  } else if (dotMatches.length > 1) {
+    normalized = cleaned.replace(/\./g, "");
+  }
+  const num = Number(normalized);
+  return Number.isFinite(num) ? num : null;
+};
+
+const prepareFormState = (data) => {
+  const images = Array.isArray(data.images) ? [...data.images] : [];
+  return {
+    ...data,
+    images,
+    priceCar: parsePriceValue(data.priceCar ?? data.price_car),
+    priceExtra: parsePriceValue(data.priceExtra ?? data.price_extra),
+  };
+};
 
 export default function AdminPage(){
   const [auth, setAuth] = useState({ loading:true, ok:false });
@@ -80,7 +110,7 @@ export default function AdminPage(){
       {/* dialogs */}
       {newTripOpen && <Dialog onClose={()=>setNewTripOpen(false)}>
         <h3 className="text-lg font-semibold mb-2">Novo passeio</h3>
-        <TripForm initial={{ id: crypto.randomUUID(), name:"", dateTime:new Date().toISOString(), location:"", difficulty:"", description:"", completeDescription:"", images:[], priceCar:"", priceExtra:"" }}
+      <TripForm initial={{ id: crypto.randomUUID(), name:"", dateTime:new Date().toISOString(), location:"", difficulty:"", description:"", completeDescription:"", images:[], priceCar:null, priceExtra:null }}
 
           onCancel={()=>setNewTripOpen(false)}
           onSave={async (created)=>{
@@ -207,11 +237,25 @@ function Dialog({ children, onClose }){
 
 function Textarea(props){ return <textarea {...props} className={cn("w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)] border-neutral-300", props.className)} />; }
 function TripForm({ initial, onSave, onCancel }){
-  const [form, setForm] = useState(initial); const [imgUrl, setImgUrl] = useState("");
-  useEffect(()=>setForm(initial), [initial]);
+  const [form, setForm] = useState(()=>prepareFormState(initial));
+  const [imgUrl, setImgUrl] = useState("");
+  useEffect(()=>setForm(prepareFormState(initial)), [initial]);
   const update = (patch)=>setForm(f=>({...f, ...patch}));
+  const handleSubmit = (e)=>{
+    e.preventDefault();
+    if(!form.name) return alert("Defina um nome.");
+    if(!form.dateTime) return alert("Defina data e hora.");
+    onSave({
+      ...form,
+      priceCar: form.priceCar ?? null,
+      priceExtra: form.priceExtra ?? null,
+    });
+  };
+  const handlePriceChange = (field)=>(values)=>{
+    update({ [field]: typeof values.floatValue === "number" ? values.floatValue : null });
+  };
   return (
-    <form className="grid gap-3" onSubmit={(e)=>{ e.preventDefault(); if(!form.name) return alert("Defina um nome."); if(!form.dateTime) return alert("Defina data e hora."); onSave(form); }}>
+    <form className="grid gap-3" onSubmit={handleSubmit}>
       <div><Label>Nome do passeio</Label><Input value={form.name} onChange={e=>update({name:e.target.value})} placeholder="Ex.: Estrada-Parque Serra da Canastra" /></div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div><Label>Data e hora</Label><Input type="datetime-local" value={toLocalInputValue(form.dateTime)} onChange={e=>update({dateTime: new Date(e.target.value).toISOString()})} /></div>
@@ -230,8 +274,38 @@ function TripForm({ initial, onSave, onCancel }){
         <div><Label>Descrição</Label><Textarea rows={4} value={form.description} onChange={e=>update({description:e.target.value})} placeholder="Resumo do roteiro, nível e recomendações." /></div>
       <div><Label>Descrição completa</Label><Textarea rows={8} value={form.completeDescription} onChange={e=>update({completeDescription:e.target.value})} placeholder="Detalhes completos do passeio." /></div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div><Label>Preço por carro (2 pessoas)</Label><Input value={form.priceCar} onChange={e=>update({priceCar:e.target.value})} placeholder="R$ 0,00" /></div>
-        <div><Label>Preço por pessoa adicional</Label><Input value={form.priceExtra} onChange={e=>update({priceExtra:e.target.value})} placeholder="R$ 0,00" /></div>
+        <div>
+          <Label>Preço por carro (2 pessoas)</Label>
+          <NumericFormat
+            value={form.priceCar ?? ""}
+            onValueChange={handlePriceChange("priceCar")}
+            customInput={Input}
+            thousandSeparator="."
+            decimalSeparator=","
+            decimalScale={2}
+            fixedDecimalScale
+            allowNegative={false}
+            prefix="R$ "
+            inputMode="decimal"
+            placeholder="R$ 0,00"
+          />
+        </div>
+        <div>
+          <Label>Preço por pessoa adicional</Label>
+          <NumericFormat
+            value={form.priceExtra ?? ""}
+            onValueChange={handlePriceChange("priceExtra")}
+            customInput={Input}
+            thousandSeparator="."
+            decimalSeparator=","
+            decimalScale={2}
+            fixedDecimalScale
+            allowNegative={false}
+            prefix="R$ "
+            inputMode="decimal"
+            placeholder="R$ 0,00"
+          />
+        </div>
       </div>
       <div>
         <Label>Fotos (URLs)</Label>
