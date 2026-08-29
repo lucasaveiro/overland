@@ -1,8 +1,4 @@
 node_modules
 dist
 .env
-netlify/.netlify
-node_modules
-dist
-.env
-etlify/.netlify
+.netlify

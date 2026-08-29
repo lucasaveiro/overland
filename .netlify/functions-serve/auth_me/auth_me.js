@@ -1,1 +1,0 @@
-module.exports = require('./netlify/functions/auth_me.js')
