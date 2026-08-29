@@ -225,7 +225,7 @@ function AdminTable({ title, trips, onEdit, onDelete, showParticipants=false }){
 function Dialog({ children, onClose }){
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40">
-      <div className="relative bg-white rounded-2xl w-[90vw] max-w-xl shadow-2xl p-4">
+      <div className="relative bg-white rounded-2xl w-[90vw] max-w-xl shadow-2xl p-4 max-h-[85vh] overflow-y-auto">
         <button type="button" onClick={onClose} className="absolute top-3 right-3 text-neutral-500 hover:text-neutral-700">
           <X className="w-5 h-5" />
         </button>

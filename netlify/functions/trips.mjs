@@ -107,7 +107,7 @@ export async function handler(event) {
         location: body.location,
         description: body.description,
         complete_description: body.completeDescription ?? body.complete_description,
-        images: body.images || [],
+        images: body.images,
         difficulty: body.difficulty,
         price_car: body.priceCar ?? body.price_car,
         price_extra: body.priceExtra ?? body.price_extra,

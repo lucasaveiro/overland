@@ -28,6 +28,7 @@ function Input(props){ return <input {...props} className={cn("w-full rounded-xl
 function Label({ htmlFor, children }){ return <label htmlFor={htmlFor} className="block text-sm font-medium mb-1">{children}</label>; }
 
 const isUpcoming = (iso) => new Date(iso).getTime() >= Date.now();
+const formatBRL = (v) => Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const difficultyColors = {
   "Nível 1 – SUV/Leve": "bg-blue-600 text-white",
@@ -191,8 +192,8 @@ function TripPage() {
       <div className="flex items-center gap-2 text-sm text-neutral-600 mt-1"><MapPin className="w-4 h-4" /><span>{trip.location}</span></div>
       <div className="mt-4 text-neutral-700">{paragraphs}</div>
       <div className="mt-4 text-sm text-neutral-700 space-y-1">
-        {trip.price_car && <div>Preço por carro (2 pessoas): <span className="font-medium">{trip.price_car}</span></div>}
-        {trip.price_extra && <div>Preço por pessoa adicional: <span className="font-medium">{trip.price_extra}</span></div>}
+        {trip.price_car != null && <div>Preço por carro (2 pessoas): <span className="font-medium">{formatBRL(trip.price_car)}</span></div>}
+        {trip.price_extra != null && <div>Preço por pessoa adicional: <span className="font-medium">{formatBRL(trip.price_extra)}</span></div>}
       </div>
 
       {trip.images?.length>1 && (
