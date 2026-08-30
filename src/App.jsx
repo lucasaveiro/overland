@@ -5,12 +5,7 @@ import { Compass, Mountain, Tent, Truck, MapPin, CalendarClock, Camera as ImageI
 import AdminPage from "./pages/Admin.jsx";
 import Lightbox from "./components/Lightbox.jsx";
 import HeroCarousel from "./components/HeroCarousel.jsx";
-// Importadas em vez de servidas de public/: assim o Vite versiona com hash no
-// nome, e trocar uma foto nunca serve a versão antiga do cache do visitante.
-import nivel1 from "./assets/niveis/nivel-1.jpg";
-import nivel2 from "./assets/niveis/nivel-2.jpg";
-import nivel3 from "./assets/niveis/nivel-3.jpg";
-import nivel4 from "./assets/niveis/nivel-4.jpg";
+import { LEVELS, badgeClassFor } from "./lib/levels.js";
 
 const API = {
   trips: "/.netlify/functions/trips",
@@ -37,12 +32,6 @@ function Label({ htmlFor, children }){ return <label htmlFor={htmlFor} className
 const isUpcoming = (iso) => new Date(iso).getTime() >= Date.now();
 const formatBRL = (v) => Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const difficultyColors = {
-  "Nível 1 – SUV/Leve": "bg-blue-600 text-white",
-  "Nível 2 – 4x4 Médio": "bg-green-600 text-white",
-  "Nível 3 – 4x4 Pesado": "bg-yellow-400 text-black",
-  "Nível 4 – Off-road Extremo": "bg-black text-white",
-};
 
 export default function App() {
   return (
@@ -145,7 +134,7 @@ function TripCard({ trip }) {
           <div className="relative">
             <img src={trip.images[0]} alt={trip.name} className="w-full h-44 object-cover" />
             {trip.difficulty && (
-              <span className={`absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-medium ${difficultyColors[trip.difficulty] || 'bg-neutral-500 text-white'}`}>{trip.difficulty}</span>
+              <span className={`absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-medium ${badgeClassFor(trip.difficulty)}`}>{trip.difficulty}</span>
             )}
           </div>
         )}
@@ -334,77 +323,6 @@ function ValueProps() {
 }
 
 function VehicleLevels() {
-  const levels = [
-    {
-      title: "Nível 1 – SUV/Leve",
-      image: nivel1,
-      imageAlt: "Jeep Renegade Trailhawk em estrada de terra bem conservada, ao entardecer",
-      profile:
-        "Veículos com tração 4x4 ou AWD, mas projetados para conforto e uso predominantemente urbano, com alguma aptidão em estradas de terra e pisos irregulares. Limitados em ângulos de ataque/saída e altura livre do solo.",
-      requirements: [
-        "Tração AWD ou 4x4 sob demanda (muitas vezes sem reduzida real).",
-        "Altura livre do solo entre 18–22 cm.",
-        "Pneus de uso misto ou mais voltados para asfalto.",
-        "Suspensão confortável, mas não reforçada para impactos severos.",
-        "Sem proteções robustas de fábrica (skid plates, para-choques off-road).",
-        "Sistema eletrônico de tração (controle de descida, terrain select), mas sem bloqueios mecânicos.",
-      ],
-      examples:
-        "Jeep Renegade 4x4 - Jeep Compass 4x4 - Mitsubishi ASX 4x4 - Jeep Commander 4x4 - Fiat Toro 4x4",
-    },
-    {
-      title: "Nível 2 - 4x4 Médio",
-      image: nivel2,
-      imageAlt: "Toyota Hilux SRV atravessando um rio raso de leito pedregoso",
-      profile:
-        "Veículos que equilibram uso rodoviário e off-road, aptos para trilhas médias, areia, lama leve e travessias rasas. Já contam com reduzida, estrutura mais robusta e altura livre superior.",
-      requirements: [
-        "Tração 4x4 com caixa de redução.",
-        "Altura livre do solo 22–24 cm.",
-        "Chassi mais robusto (monobloco reforçado ou chassi sobre longarinas).",
-        "Pneus AT de fábrica ou facilmente adaptáveis.",
-        "Ângulos de ataque/saída medianos.",
-        "Recursos como controle de descida e modos de terreno.",
-        "Sem bloqueios diferenciais mecânicos (ou apenas traseiro eletrônico opcional).",
-      ],
-      examples:
-        "- Ram Rampage 4x4 - Chevrolet S10 LS/LT/LTZ - Mitsubishi L200 Triton GLX/GLS/Outdoor - Toyota Hilux SR/SRV - Nissan Frontier S/SE/XE - Volkswagen Amarok Comfortline/Highline - Pajero TR4 4x4 - Fiat Titano Volcano/Ranch",
-    },
-    {
-      title: "Nível 3 - 4x4 Pesado",
-      image: nivel3,
-      imageAlt: "Ford Ranger vencendo um degrau rochoso em trilha de montanha",
-      profile:
-        "Veículos preparados de fábrica ou facilmente adaptáveis para trilhas pesadas e expedições, com boa articulação de suspensão, altura livre elevada, bloqueios diferenciais opcionais e grande robustez mecânica.",
-      requirements: [
-        "Tração 4x4 com reduzida e bloqueio de diferencial (pelo menos traseiro).",
-        "Altura livre do solo 24–27 cm.",
-        "Chassi sobre longarinas ou monobloco extremamente reforçado.",
-        "Ângulos de ataque/saída favoráveis.",
-        "Capacidade de carga alta e tolerância a modificações (lift, pneus MT).",
-        "Mecânica confiável para uso extremo.",
-      ],
-      examples:
-        "Pajero Dakar - Chevrolet S10 HighCountry - Ford Ranger Storm/Limited - Ram 1500 - Ram 2500 - Nissan Frontier Attack/4Pro-X/Platinum - Mitsubishi L200 Triton Sport HPE-S - Toyota Hilux SRX - Volkswagen Amarok Extreme V6",
-    },
-    {
-      title: "Nível 4 – 4x4 Extremo",
-      image: nivel4,
-      imageAlt: "Jeep Wrangler Rubicon com suspensão muito articulada sobre pedras e lama, na mata",
-      profile:
-        "Veículos com projeto ou preparo para enfrentar obstáculos severos, como pedras, lama profunda e subidas radicais, com máxima articulação e tração. São os mais indicados para aventuras pesadas e terrenos hostis.",
-      requirements: [
-        "Tração 4x4 com reduzida e bloqueio de diferencial dianteiro e traseiro.",
-        "Altura livre do solo acima de 27 cm.",
-        "Ângulos de ataque/saída máximos.",
-        "Grande curso de suspensão e possibilidade de modificações severas.",
-        "Construção extremamente robusta (eixo rígido na dianteira/traseira é comum).",
-        "Pode ter snorkel, guincho, proteções integrais e pneus MT de fábrica ou instalados.",
-      ],
-      examples:
-        "Suzuki Jimny 4x4 - Troller T4 - Jeep Wrangler",
-    },
-  ];
 
   return (
     <section id="niveis" className="mt-16">
@@ -414,7 +332,7 @@ function VehicleLevels() {
         subtitle="Recomendações de acordo com o preparo do seu 4x4"
       />
       <div className="grid md:grid-cols-2 gap-6">
-        {levels.map((level) => (
+        {LEVELS.map((level) => (
           <Card key={level.title} className="border shadow-sm overflow-hidden">
             {level.image && (
               <img

@@ -2,6 +2,7 @@ import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { Pencil, Plus, Trash2, Image as ImageIcon, Save, X, KeyRound, CalendarClock, MapPin, Upload } from "lucide-react";
 import { NumericFormat } from "react-number-format";
 import { uploadTripImage, deleteTripImage, isUploadedImage } from "../lib/imageUpload.js";
+import { LEVEL_TITLES } from "../lib/levels.js";
 
 const API = {
   trips: "/.netlify/functions/trips",
@@ -316,10 +317,9 @@ function TripForm({ initial, onSave, onCancel, onUploaded }){
           <Label>Dificuldade</Label>
           <select value={form.difficulty} onChange={e=>update({difficulty:e.target.value})} className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)] border-neutral-300">
             <option value="">Selecione</option>
-            <option value="Nível 1 – SUV/Leve">Nível 1 – SUV/Leve</option>
-            <option value="Nível 2 – 4x4 Médio">Nível 2 – 4x4 Médio</option>
-            <option value="Nível 3 – 4x4 Pesado">Nível 3 – 4x4 Pesado</option>
-            <option value="Nível 4 – Off-road Extremo">Nível 4 – Off-road Extremo</option>
+            {LEVEL_TITLES.map((titulo)=>(
+              <option key={titulo} value={titulo}>{titulo}</option>
+            ))}
           </select>
         </div>
         <div><Label>Descrição</Label><Textarea rows={4} value={form.description} onChange={e=>update({description:e.target.value})} placeholder="Resumo do roteiro, nível e recomendações." /></div>
