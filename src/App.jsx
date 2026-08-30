@@ -5,7 +5,9 @@ import { Compass, Mountain, Tent, Truck, MapPin, CalendarClock, Camera as ImageI
 import AdminPage from "./pages/Admin.jsx";
 import Lightbox from "./components/Lightbox.jsx";
 import HeroCarousel from "./components/HeroCarousel.jsx";
+import ProdutosPage from "./pages/Produtos.jsx";
 import { LEVELS, badgeClassFor } from "./lib/levels.js";
+import { formatBRL } from "./lib/format.js";
 
 const API = {
   trips: "/.netlify/functions/trips",
@@ -30,7 +32,6 @@ function Input(props){ return <input {...props} className={cn("w-full rounded-xl
 function Label({ htmlFor, children }){ return <label htmlFor={htmlFor} className="block text-sm font-medium mb-1">{children}</label>; }
 
 const isUpcoming = (iso) => new Date(iso).getTime() >= Date.now();
-const formatBRL = (v) => Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 
 export default function App() {
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/passeio/:id" element={<TripPage />} />
+          <Route path="/produtos" element={<ProdutosPage />} />
         </Routes>
       </main>
       <Footer />
@@ -247,8 +249,9 @@ function Header(){
           </div>
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm">
-          <a href="#proximos" className="hover:underline">Passeios</a>
-          <a href="#galeria" className="hover:underline">Galeria</a>
+          <a href="/#proximos" className="hover:underline">Passeios</a>
+          <a href="/#galeria" className="hover:underline">Galeria</a>
+          <Link to="/produtos" className="hover:underline">Produtos</Link>
           <Link to="/admin" className="text-neutral-500 hover:underline">Área do administrador</Link>
         </nav>
       </div>
@@ -268,7 +271,7 @@ function Footer(){
           </div>
         </div>
         <div className="flex gap-4">
-          <a href="#proximos" className="hover:underline">Próximos passeios</a>
+          <a href="/#proximos" className="hover:underline">Próximos passeios</a>
           <Link to="/admin" className="text-neutral-500 hover:underline">Login do administrador</Link>
         </div>
       </div>

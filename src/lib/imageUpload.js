@@ -5,9 +5,14 @@ export const MAX_ORIGINAL_BYTES = 1.5 * 1024 * 1024;
 // Limite do maior lado depois do redimensionamento.
 export const MAX_EDGE = 2560;
 
-const PUBLIC_PREFIX = "/storage/v1/object/public/trip-images/";
+// Um bucket por tipo; ver KINDS em netlify/functions/upload_url.mjs.
+const PUBLIC_PREFIXES = [
+  "/storage/v1/object/public/trip-images/",
+  "/storage/v1/object/public/product-images/",
+];
 
-export const isUploadedImage = (url) => typeof url === "string" && url.includes(PUBLIC_PREFIX);
+export const isUploadedImage = (url) =>
+  typeof url === "string" && PUBLIC_PREFIXES.some((p) => url.includes(p));
 
 /**
  * Só mexe no arquivo quando ele passa de 1,5 MB. A proporção original é sempre
@@ -44,15 +49,18 @@ export async function prepareImage(file) {
 /**
  * Sobe direto para o Supabase com uma URL assinada emitida pela function.
  * O arquivo não passa pela function por causa do teto de 6 MB de payload.
+ *
+ * @param {File} file
+ * @param {{kind: "trip"|"product", ownerId: string}} destino
  */
-export async function uploadTripImage(file, tripId) {
+export async function uploadImage(file, { kind, ownerId }) {
   const { blob, contentType, resized } = await prepareImage(file);
 
   const res = await fetch(API_UPLOAD, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ tripId, contentType }),
+    body: JSON.stringify({ kind, ownerId, contentType }),
   });
   if (!res.ok) {
     const { error } = await res.json().catch(() => ({}));
@@ -70,7 +78,7 @@ export async function uploadTripImage(file, tripId) {
 }
 
 /** Best-effort: URL externa (colada à mão) é ignorada, não há o que apagar. */
-export async function deleteTripImage(url) {
+export async function deleteUploadedImage(url) {
   if (!isUploadedImage(url)) return;
   await fetch(`${API_UPLOAD}?url=${encodeURIComponent(url)}`, {
     method: "DELETE",

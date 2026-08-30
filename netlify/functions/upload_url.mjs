@@ -9,7 +9,13 @@ const SESSION_SECRET = (process.env.SESSION_SECRET || '').trim()
 
 const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
 
-const BUCKET = 'trip-images'
+// Cada tipo tem seu bucket e seu prefixo. O prefixo agrupa por dono, o que faz
+// a exclusão em cascata ser só varrer <prefix>/<ownerId>/.
+const KINDS = {
+  trip: { bucket: 'trip-images', prefix: 'trips' },
+  product: { bucket: 'product-images', prefix: 'products' },
+}
+
 const EXT_BY_TYPE = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -53,12 +59,19 @@ async function requireAdmin(event) {
   return !!verify(getCookie(event.headers.cookie, 'session'))
 }
 
-// Deriva o caminho no bucket a partir da URL pública. Retorna null para URLs externas.
-function pathFromPublicUrl(url) {
+// Descobre bucket e caminho a partir da URL pública. Devolve null para URL
+// externa (colada à mão), que não é nossa para apagar.
+function locateFromPublicUrl(url) {
   if (!url) return null
-  const marker = `/storage/v1/object/public/${BUCKET}/`
-  const i = url.indexOf(marker)
-  return i === -1 ? null : decodeURIComponent(url.slice(i + marker.length))
+  for (const { bucket, prefix } of Object.values(KINDS)) {
+    const marker = `/storage/v1/object/public/${bucket}/`
+    const i = url.indexOf(marker)
+    if (i === -1) continue
+    const path = decodeURIComponent(url.slice(i + marker.length))
+    if (!path.startsWith(`${prefix}/`)) return null
+    return { bucket, path }
+  }
+  return null
 }
 
 // ===== Handler =====
@@ -72,30 +85,35 @@ export async function handler(event) {
     // Emite URL assinada para o navegador subir o arquivo direto no Supabase.
     // O arquivo nunca passa pela function (limite de 6 MB de payload no Lambda).
     if (event.httpMethod === 'POST') {
-      const { tripId, contentType } = JSON.parse(event.body || '{}')
-      if (!UUID_RE.test(tripId || '')) return json(400, { error: 'tripId inválido' }, event)
-      const ext = EXT_BY_TYPE[contentType]
-      if (!ext) return json(400, { error: `Tipo não suportado: ${contentType}` }, event)
+      const body = JSON.parse(event.body || '{}')
+      const kind = body.kind || 'trip'
+      const target = KINDS[kind]
+      if (!target) return json(400, { error: `kind inválido: ${kind}` }, event)
 
-      const path = `trips/${tripId}/${crypto.randomUUID()}.${ext}`
-      const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(path)
+      const ownerId = body.ownerId || body.tripId
+      if (!UUID_RE.test(ownerId || '')) return json(400, { error: 'ownerId inválido' }, event)
+
+      const ext = EXT_BY_TYPE[body.contentType]
+      if (!ext) return json(400, { error: `Tipo não suportado: ${body.contentType}` }, event)
+
+      const path = `${target.prefix}/${ownerId}/${crypto.randomUUID()}.${ext}`
+      const { data, error } = await supabase.storage.from(target.bucket).createSignedUploadUrl(path)
       if (error) return json(500, { error: error.message }, event)
 
       return json(200, {
         signedUrl: data.signedUrl,
         token: data.token,
         path,
-        publicUrl: `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${path}`,
+        publicUrl: `${supabaseUrl}/storage/v1/object/public/${target.bucket}/${path}`,
       }, event)
     }
 
-    // Remove um objeto avulso (ex.: admin tira uma foto do passeio antes de salvar).
+    // Remove um objeto avulso (ex.: admin tira uma foto antes de salvar).
     if (event.httpMethod === 'DELETE') {
-      const params = event.queryStringParameters || {}
-      const path = params.path || pathFromPublicUrl(params.url)
-      if (!path || !path.startsWith('trips/')) return json(400, { error: 'path inválido' }, event)
+      const found = locateFromPublicUrl((event.queryStringParameters || {}).url)
+      if (!found) return json(400, { error: 'url inválida' }, event)
 
-      const { error } = await supabase.storage.from(BUCKET).remove([path])
+      const { error } = await supabase.storage.from(found.bucket).remove([found.path])
       if (error) return json(500, { error: error.message }, event)
       return json(204, {}, event)
     }

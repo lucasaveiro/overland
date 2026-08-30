@@ -1,8 +1,9 @@
 import React, { forwardRef, useEffect, useRef, useState } from "react";
-import { Pencil, Plus, Trash2, Image as ImageIcon, Save, X, KeyRound, CalendarClock, MapPin, Upload } from "lucide-react";
+import { Pencil, Plus, Trash2, Image as ImageIcon, Save, X, KeyRound, CalendarClock, MapPin, Upload, ShoppingBag, ExternalLink } from "lucide-react";
 import { NumericFormat } from "react-number-format";
-import { uploadTripImage, deleteTripImage, isUploadedImage } from "../lib/imageUpload.js";
+import { uploadImage, deleteUploadedImage, isUploadedImage } from "../lib/imageUpload.js";
 import { LEVEL_TITLES } from "../lib/levels.js";
+import ProductsSection from "./AdminProducts.jsx";
 
 const API = {
   trips: "/.netlify/functions/trips",
@@ -10,10 +11,11 @@ const API = {
   me: "/.netlify/functions/auth_me",
   logout: "/.netlify/functions/auth_logout",
   registrations: "/.netlify/functions/registrations",
+  products: "/.netlify/functions/products",
 };
 
 const cn = (...c) => c.filter(Boolean).join(" ");
-function Button({ className = "", variant = "primary", children, ...props }) {
+export function Button({ className = "", variant = "primary", children, ...props }) {
   const base = "inline-flex items-center justify-center gap-1.5 rounded-2xl px-3 py-2 text-sm transition border";
   const variants = {
     primary: "bg-[var(--moss)] text-white hover:bg-[var(--moss-600)] border-transparent",
@@ -22,14 +24,14 @@ function Button({ className = "", variant = "primary", children, ...props }) {
   };
   return <button className={cn(base, variants[variant], className)} {...props}>{children}</button>;
 }
-function Card({ className = "", children }) { return <div className={cn("rounded-3xl border bg-white shadow-sm", className)}>{children}</div>; }
+export function Card({ className = "", children }) { return <div className={cn("rounded-3xl border bg-white shadow-sm", className)}>{children}</div>; }
 function CardHeader({ className = "", children }) { return <div className={cn("p-4", className)}>{children}</div>; }
-function CardContent({ className = "", children }) { return <div className={cn("p-4", className)}>{children}</div>; }
+export function CardContent({ className = "", children }) { return <div className={cn("p-4", className)}>{children}</div>; }
 function CardTitle({ className = "", children }) { return <div className={cn("text-lg font-semibold", className)}>{children}</div>; }
-const Input = forwardRef(function Input(props, ref){
+export const Input = forwardRef(function Input(props, ref){
   return <input ref={ref} {...props} className={cn("w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)] border-neutral-300", props.className)} />;
 });
-function Label({ htmlFor, children }){ return <label htmlFor={htmlFor} className="block text-sm font-medium mb-1">{children}</label>; }
+export function Label({ htmlFor, children }){ return <label htmlFor={htmlFor} className="block text-sm font-medium mb-1">{children}</label>; }
 
 const isUpcoming = (iso) => new Date(iso).getTime() >= Date.now();
 const toLocalInputValue = (date) => { if(!date) return ""; const d=new Date(date); const p=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
@@ -75,7 +77,7 @@ export default function AdminPage(){
     const orphans = sessionUploads;
     setSessionUploads([]);
     close();
-    orphans.forEach(deleteTripImage);
+    orphans.forEach(deleteUploadedImage);
   };
 
   // Salvar: apaga o que subiu mas ficou de fora, e o que saiu do passeio.
@@ -84,7 +86,7 @@ export default function AdminPage(){
     const dropped = [...new Set([...sessionUploads, ...(previous || [])])]
       .filter((url) => !kept.has(url) && isUploadedImage(url));
     setSessionUploads([]);
-    dropped.forEach(deleteTripImage);
+    dropped.forEach(deleteUploadedImage);
   };
 
   // Checa sessão
@@ -140,6 +142,8 @@ export default function AdminPage(){
             if(res.ok){ const data = await res.json(); setTrips(prev=>[data,...prev]); reconcileImages([], data.images); setNewTripId(null); } else alert("Falha ao criar.");
           }}/>
       </Dialog>}
+
+      <ProductsSection />
 
       {editing && <Dialog onClose={()=>discardDialog(()=>setEditing(null))}>
         <h3 className="text-lg font-semibold mb-2">Editar passeio</h3>
@@ -246,7 +250,7 @@ function AdminTable({ title, trips, onEdit, onDelete, showParticipants=false }){
   );
 }
 
-function Dialog({ children, onClose }){
+export function Dialog({ children, onClose }){
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40">
       <div className="relative bg-white rounded-2xl w-[90vw] max-w-xl shadow-2xl p-4 max-h-[85vh] overflow-y-auto">
@@ -259,7 +263,7 @@ function Dialog({ children, onClose }){
   );
 }
 
-function Textarea(props){ return <textarea {...props} className={cn("w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)] border-neutral-300", props.className)} />; }
+export function Textarea(props){ return <textarea {...props} className={cn("w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)] border-neutral-300", props.className)} />; }
 function TripForm({ initial, onSave, onCancel, onUploaded }){
   const [form, setForm] = useState(()=>prepareFormState(initial));
   const [imgUrl, setImgUrl] = useState("");
@@ -279,7 +283,7 @@ function TripForm({ initial, onSave, onCancel, onUploaded }){
     const added = []; const errors = []; let resizedCount = 0;
     for(const file of files){
       try{
-        const { url, resized } = await uploadTripImage(file, form.id);
+        const { url, resized } = await uploadImage(file, { kind: "trip", ownerId: form.id });
         if(resized) resizedCount++;
         added.push(url);
         onUploaded?.(url);
