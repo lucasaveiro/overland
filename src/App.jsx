@@ -5,6 +5,12 @@ import { Compass, Mountain, Tent, Truck, MapPin, CalendarClock, Camera as ImageI
 import AdminPage from "./pages/Admin.jsx";
 import Lightbox from "./components/Lightbox.jsx";
 import HeroCarousel from "./components/HeroCarousel.jsx";
+// Importadas em vez de servidas de public/: assim o Vite versiona com hash no
+// nome, e trocar uma foto nunca serve a versão antiga do cache do visitante.
+import nivel1 from "./assets/niveis/nivel-1.jpg";
+import nivel2 from "./assets/niveis/nivel-2.jpg";
+import nivel3 from "./assets/niveis/nivel-3.jpg";
+import nivel4 from "./assets/niveis/nivel-4.jpg";
 
 const API = {
   trips: "/.netlify/functions/trips",
@@ -331,7 +337,7 @@ function VehicleLevels() {
   const levels = [
     {
       title: "Nível 1 – SUV/Leve",
-      image: "/niveis/nivel-1.jpg",
+      image: nivel1,
       imageAlt: "Jeep Renegade Trailhawk em estrada de terra bem conservada, ao entardecer",
       profile:
         "Veículos com tração 4x4 ou AWD, mas projetados para conforto e uso predominantemente urbano, com alguma aptidão em estradas de terra e pisos irregulares. Limitados em ângulos de ataque/saída e altura livre do solo.",
@@ -348,7 +354,7 @@ function VehicleLevels() {
     },
     {
       title: "Nível 2 - 4x4 Médio",
-      image: "/niveis/nivel-2.jpg",
+      image: nivel2,
       imageAlt: "Toyota Hilux SRV atravessando um rio raso de leito pedregoso",
       profile:
         "Veículos que equilibram uso rodoviário e off-road, aptos para trilhas médias, areia, lama leve e travessias rasas. Já contam com reduzida, estrutura mais robusta e altura livre superior.",
@@ -366,7 +372,7 @@ function VehicleLevels() {
     },
     {
       title: "Nível 3 - 4x4 Pesado",
-      image: "/niveis/nivel-3.jpg",
+      image: nivel3,
       imageAlt: "Ford Ranger vencendo um degrau rochoso em trilha de montanha",
       profile:
         "Veículos preparados de fábrica ou facilmente adaptáveis para trilhas pesadas e expedições, com boa articulação de suspensão, altura livre elevada, bloqueios diferenciais opcionais e grande robustez mecânica.",
@@ -383,7 +389,7 @@ function VehicleLevels() {
     },
     {
       title: "Nível 4 – 4x4 Extremo",
-      image: "/niveis/nivel-4.jpg",
+      image: nivel4,
       imageAlt: "Jeep Wrangler Rubicon com suspensão muito articulada sobre pedras e lama, na mata",
       profile:
         "Veículos com projeto ou preparo para enfrentar obstáculos severos, como pedras, lama profunda e subidas radicais, com máxima articulação e tração. São os mais indicados para aventuras pesadas e terrenos hostis.",
