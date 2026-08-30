@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Compass, Mountain, Tent, Truck, MapPin, CalendarClock, Camera as ImageIcon } from "lucide-react";
 import AdminPage from "./pages/Admin.jsx";
 import Lightbox from "./components/Lightbox.jsx";
+import HeroCarousel from "./components/HeroCarousel.jsx";
 
 const API = {
   trips: "/.netlify/functions/trips",
@@ -185,9 +186,18 @@ function TripPage() {
 
 
   return (
-    <div className="py-8 max-w-3xl mx-auto">
-      {trip.images?.[0] && <img src={trip.images[0]} alt={trip.name} className="w-full h-64 object-cover rounded-3xl shadow-sm" />}
-      <h1 className="text-2xl font-semibold mt-4">{trip.name}</h1>
+    <div className="py-8">
+      {/* Galeria em destaque: ocupa a faixa inteira, fora da coluna de leitura. */}
+      {trip.images?.length>0 && (
+        <HeroCarousel
+          images={trip.images}
+          alt={trip.name}
+          onOpen={(i)=>{ setLightboxIndex(i); setLightboxOpen(true); }}
+        />
+      )}
+
+      <div className="max-w-3xl mx-auto">
+      <h1 className="text-2xl font-semibold mt-6">{trip.name}</h1>
       <div className="flex items-center gap-2 text-sm text-neutral-600 mt-1"><CalendarClock className="w-4 h-4" /><span>{formatted}</span></div>
       <div className="flex items-center gap-2 text-sm text-neutral-600 mt-1"><MapPin className="w-4 h-4" /><span>{trip.location}</span></div>
       <div className="mt-4 text-neutral-700">{paragraphs}</div>
@@ -196,23 +206,12 @@ function TripPage() {
         {trip.price_extra != null && <div>Preço por pessoa adicional: <span className="font-medium">{formatBRL(trip.price_extra)}</span></div>}
       </div>
 
-      {trip.images?.length>1 && (
-        <section className="mt-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {trip.images.map((src,i)=>(
-              <button key={i} className="relative group" onClick={()=>{ setLightboxIndex(i); setLightboxOpen(true); }}>
-                <img src={src} alt="" className="w-full h-32 object-cover rounded-xl" />
-              </button>
-            ))}
-          </div>
-          {lightboxOpen && (
-            <Lightbox
-              images={trip.images.map(s=>({src:s, alt:trip.name}))}
-              startIndex={lightboxIndex}
-              onClose={()=>setLightboxOpen(false)}
-            />
-          )}
-        </section>
+      {lightboxOpen && (
+        <Lightbox
+          images={trip.images.map(s=>({src:s, alt:trip.name}))}
+          startIndex={lightboxIndex}
+          onClose={()=>setLightboxOpen(false)}
+        />
       )}
 
       <form className="grid md:grid-cols-3 gap-3 mt-8" onSubmit={async (e)=>{
@@ -230,6 +229,7 @@ function TripPage() {
           </div>
         </div>
       </form>
+      </div>
     </div>
   );
 }
