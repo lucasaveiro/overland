@@ -12,3 +12,17 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Bundles com hash no nome (Vite). O nome muda junto com o conteúdo, então
+# cachear para sempre não tem risco de servir versão velha.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Nomes fixos: para trocar uma dessas imagens, troque também o nome do arquivo
+# (nivel-1-v2.jpg), senão quem já visitou continua vendo a antiga.
+[[headers]]
+  for = "/niveis/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
