@@ -1,6 +1,7 @@
-import React, { forwardRef, useEffect, useState } from "react";
-import { Pencil, Plus, Trash2, Image as ImageIcon, Save, X, KeyRound, CalendarClock, MapPin } from "lucide-react";
+import React, { forwardRef, useEffect, useRef, useState } from "react";
+import { Pencil, Plus, Trash2, Image as ImageIcon, Save, X, KeyRound, CalendarClock, MapPin, Upload } from "lucide-react";
 import { NumericFormat } from "react-number-format";
+import { uploadTripImage, deleteTripImage, isUploadedImage } from "../lib/imageUpload.js";
 
 const API = {
   trips: "/.netlify/functions/trips",
@@ -63,7 +64,27 @@ export default function AdminPage(){
   const [auth, setAuth] = useState({ loading:true, ok:false });
   const [trips, setTrips] = useState([]);
   const [editing, setEditing] = useState(null);
-  const [newTripOpen, setNewTripOpen] = useState(false);
+  // Guarda o id do passeio novo: as fotos sobem para trips/<id>/ antes de ele existir.
+  const [newTripId, setNewTripId] = useState(null);
+  // Fotos enviadas desde que o diálogo abriu, para saber o que descartar.
+  const [sessionUploads, setSessionUploads] = useState([]);
+
+  // Cancelar: apaga tudo que subiu neste diálogo e não chegou a ser salvo.
+  const discardDialog = (close) => {
+    const orphans = sessionUploads;
+    setSessionUploads([]);
+    close();
+    orphans.forEach(deleteTripImage);
+  };
+
+  // Salvar: apaga o que subiu mas ficou de fora, e o que saiu do passeio.
+  const reconcileImages = (previous, saved) => {
+    const kept = new Set(saved || []);
+    const dropped = [...new Set([...sessionUploads, ...(previous || [])])]
+      .filter((url) => !kept.has(url) && isUploadedImage(url));
+    setSessionUploads([]);
+    dropped.forEach(deleteTripImage);
+  };
 
   // Checa sessão
   useEffect(()=>{
@@ -87,7 +108,7 @@ export default function AdminPage(){
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold tracking-tight">Área do administrador</h1>
         <div className="flex gap-2">
-          <Button onClick={()=>setNewTripOpen(true)}><Plus className="w-4 h-4 mr-1" /> Novo passeio</Button>
+          <Button onClick={()=>setNewTripId(crypto.randomUUID())}><Plus className="w-4 h-4 mr-1" /> Novo passeio</Button>
           <Button variant="secondary" onClick={async()=>{ await fetch(API.logout, { method:"POST", credentials:"include" }); location.reload(); }}>Sair</Button>
         </div>
       </div>
@@ -108,25 +129,27 @@ export default function AdminPage(){
       }}/>
 
       {/* dialogs */}
-      {newTripOpen && <Dialog onClose={()=>setNewTripOpen(false)}>
+      {newTripId && <Dialog onClose={()=>discardDialog(()=>setNewTripId(null))}>
         <h3 className="text-lg font-semibold mb-2">Novo passeio</h3>
-      <TripForm initial={{ id: crypto.randomUUID(), name:"", dateTime:new Date().toISOString(), location:"", difficulty:"", description:"", completeDescription:"", images:[], priceCar:null, priceExtra:null }}
-
-          onCancel={()=>setNewTripOpen(false)}
+      <TripForm initial={{ id: newTripId, name:"", dateTime:new Date().toISOString(), location:"", difficulty:"", description:"", completeDescription:"", images:[], priceCar:null, priceExtra:null }}
+          onUploaded={(url)=>setSessionUploads(prev=>[...prev, url])}
+          onCancel={()=>discardDialog(()=>setNewTripId(null))}
           onSave={async (created)=>{
             const res = await fetch(API.trips, { method:"POST", credentials:"include", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(created) });
-            if(res.ok){ const data = await res.json(); setTrips(prev=>[data,...prev]); setNewTripOpen(false); } else alert("Falha ao criar.");
+            if(res.ok){ const data = await res.json(); setTrips(prev=>[data,...prev]); reconcileImages([], data.images); setNewTripId(null); } else alert("Falha ao criar.");
           }}/>
       </Dialog>}
 
-      {editing && <Dialog onClose={()=>setEditing(null)}>
+      {editing && <Dialog onClose={()=>discardDialog(()=>setEditing(null))}>
         <h3 className="text-lg font-semibold mb-2">Editar passeio</h3>
 
         <TripForm initial={{ id:editing.id, name:editing.name, dateTime:editing.date_time, location:editing.location, difficulty:editing.difficulty, description:editing.description, completeDescription:editing.complete_description, images:editing.images||[], priceCar:editing.price_car, priceExtra:editing.price_extra }}
-          onCancel={()=>setEditing(null)}
+          onUploaded={(url)=>setSessionUploads(prev=>[...prev, url])}
+          onCancel={()=>discardDialog(()=>setEditing(null))}
           onSave={async (patch)=>{
+            const previous = editing.images || [];
             const res = await fetch(API.trips, { method:"PUT", credentials:"include", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(patch) });
-            if(res.ok){ const data = await res.json(); setTrips(prev=>prev.map(t=>t.id===data.id?data:t)); setEditing(null);} else alert("Falha ao salvar.");
+            if(res.ok){ const data = await res.json(); setTrips(prev=>prev.map(t=>t.id===data.id?data:t)); reconcileImages(previous, data.images); setEditing(null);} else alert("Falha ao salvar.");
           }}/>
       </Dialog>}
     </div>
@@ -236,11 +259,39 @@ function Dialog({ children, onClose }){
 }
 
 function Textarea(props){ return <textarea {...props} className={cn("w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)] border-neutral-300", props.className)} />; }
-function TripForm({ initial, onSave, onCancel }){
+function TripForm({ initial, onSave, onCancel, onUploaded }){
   const [form, setForm] = useState(()=>prepareFormState(initial));
   const [imgUrl, setImgUrl] = useState("");
-  useEffect(()=>setForm(prepareFormState(initial)), [initial]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadNote, setUploadNote] = useState("");
+  const [uploadError, setUploadError] = useState("");
+  const fileRef = useRef(null);
+  // Depende do id, não do objeto: `initial` é um literal inline no AdminPage e
+  // muda de identidade a cada render dele, o que zeraria o form em digitação.
+  useEffect(()=>setForm(prepareFormState(initial)), [initial.id]);
   const update = (patch)=>setForm(f=>({...f, ...patch}));
+
+  const handleFiles = async (fileList)=>{
+    const files = Array.from(fileList || []);
+    if(!files.length) return;
+    setUploading(true); setUploadError(""); setUploadNote("");
+    const added = []; const errors = []; let resizedCount = 0;
+    for(const file of files){
+      try{
+        const { url, resized } = await uploadTripImage(file, form.id);
+        if(resized) resizedCount++;
+        added.push(url);
+        onUploaded?.(url);
+      }catch(err){ errors.push(err.message); }
+    }
+    if(added.length) setForm(f=>({...f, images:[...(f.images||[]), ...added]}));
+    if(resizedCount) setUploadNote(resizedCount===1
+      ? "1 imagem passava de 1,5 MB e foi redimensionada para caber no limite."
+      : `${resizedCount} imagens passavam de 1,5 MB e foram redimensionadas para caber no limite.`);
+    if(errors.length) setUploadError(errors.join(" "));
+    setUploading(false);
+    if(fileRef.current) fileRef.current.value = "";
+  };
   const handleSubmit = (e)=>{
     e.preventDefault();
     if(!form.name) return alert("Defina um nome.");
@@ -308,9 +359,25 @@ function TripForm({ initial, onSave, onCancel }){
         </div>
       </div>
       <div>
-        <Label>Fotos (URLs)</Label>
-        <div className="flex gap-2">
-          <Input value={imgUrl} onChange={e=>setImgUrl(e.target.value)} placeholder="https://..." />
+        <Label>Fotos</Label>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/avif"
+          multiple
+          className="hidden"
+          onChange={e=>handleFiles(e.target.files)}
+        />
+        <Button type="button" variant="secondary" disabled={uploading} onClick={()=>fileRef.current?.click()}>
+          <Upload className="w-4 h-4 mr-1" /> {uploading ? "Enviando…" : "Enviar do computador"}
+        </Button>
+        <p className="text-xs text-neutral-500 mt-1">
+          Imagens acima de 1,5 MB são redimensionadas automaticamente para no máximo 2560px, mantendo a proporção original.
+        </p>
+        {uploadNote && <p className="text-xs text-neutral-600 mt-1">{uploadNote}</p>}
+        {uploadError && <p className="text-xs text-red-600 mt-1">{uploadError}</p>}
+        <div className="flex gap-2 mt-3">
+          <Input value={imgUrl} onChange={e=>setImgUrl(e.target.value)} placeholder="ou cole uma URL https://..." />
           <Button type="button" variant="secondary" onClick={()=>{ if(!imgUrl) return; update({ images:[...(form.images||[]), imgUrl] }); setImgUrl(""); }}>
             <ImageIcon className="w-4 h-4 mr-1" /> Adicionar
           </Button>
@@ -326,7 +393,7 @@ function TripForm({ initial, onSave, onCancel }){
       </div>
       <div className="flex justify-end gap-2 mt-2">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>
-        <Button type="submit"><Save className="w-4 h-4 mr-1" /> Salvar</Button>
+        <Button type="submit" disabled={uploading}><Save className="w-4 h-4 mr-1" /> Salvar</Button>
       </div>
     </form>
   );

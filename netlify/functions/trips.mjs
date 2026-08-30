@@ -9,6 +9,8 @@ const SESSION_SECRET = (process.env.SESSION_SECRET || '').trim()
 
 const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
 
+const BUCKET = 'trip-images'
+
 // ===== Utils =====
 const json = (status, data, event) => {
   const origin = event?.headers?.origin || ''
@@ -43,6 +45,23 @@ async function requireAdmin(event) {
   const token = getCookie(event.headers.cookie, 'session')
   const payload = verify(token)
   return !!payload
+}
+
+// Remove tudo que estiver em trips/<id>/ no bucket. Devolve null em caso de
+// sucesso, ou uma mensagem quando o passeio saiu do banco mas as fotos ficaram.
+async function purgeTripImages(id) {
+  const prefix = `trips/${id}`
+  const { data: files, error: listError } = await supabase.storage
+    .from(BUCKET)
+    .list(prefix, { limit: 1000 })
+  if (listError) return `Passeio removido, mas falhou ao listar as fotos: ${listError.message}`
+  if (!files?.length) return null
+
+  const { error: removeError } = await supabase.storage
+    .from(BUCKET)
+    .remove(files.map((f) => `${prefix}/${f.name}`))
+  if (removeError) return `Passeio removido, mas falhou ao apagar as fotos: ${removeError.message}`
+  return null
 }
 
 // ===== Handler =====
@@ -123,7 +142,11 @@ export async function handler(event) {
       await supabase.from('registrations').delete().eq('trip_id', id)
       const { error } = await supabase.from('trips').delete().eq('id', id)
       if (error) return json(500, { error: error.message }, event)
-      return json(204, {}, event)
+
+      // Apaga as fotos do passeio. Varre o prefixo inteiro em vez de usar as URLs
+      // gravadas em trips.images, para levar junto órfãos de upload interrompido.
+      const warning = await purgeTripImages(id)
+      return warning ? json(200, { ok: true, warning }, event) : json(204, {}, event)
     }
 
     return json(405, { error: 'Method not allowed' }, event)
