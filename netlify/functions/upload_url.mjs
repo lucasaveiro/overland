@@ -14,6 +14,7 @@ const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession:
 const KINDS = {
   trip: { bucket: 'trip-images', prefix: 'trips' },
   product: { bucket: 'product-images', prefix: 'products' },
+  banner: { bucket: 'banner-images', prefix: 'banners' },
 }
 
 const EXT_BY_TYPE = {

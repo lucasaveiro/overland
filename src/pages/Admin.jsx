@@ -4,6 +4,7 @@ import { NumericFormat } from "react-number-format";
 import { uploadImage, deleteUploadedImage, isUploadedImage } from "../lib/imageUpload.js";
 import { LEVEL_TITLES } from "../lib/levels.js";
 import ProductsSection from "./AdminProducts.jsx";
+import BannersSection from "./AdminBanners.jsx";
 
 const API = {
   trips: "/.netlify/functions/trips",
@@ -144,6 +145,8 @@ export default function AdminPage(){
       </Dialog>}
 
       <ProductsSection />
+
+      <BannersSection />
 
       {editing && <Dialog onClose={()=>discardDialog(()=>setEditing(null))}>
         <h3 className="text-lg font-semibold mb-2">Editar passeio</h3>

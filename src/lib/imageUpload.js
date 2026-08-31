@@ -9,6 +9,7 @@ export const MAX_EDGE = 2560;
 const PUBLIC_PREFIXES = [
   "/storage/v1/object/public/trip-images/",
   "/storage/v1/object/public/product-images/",
+  "/storage/v1/object/public/banner-images/",
 ];
 
 export const isUploadedImage = (url) =>
@@ -51,7 +52,7 @@ export async function prepareImage(file) {
  * O arquivo não passa pela function por causa do teto de 6 MB de payload.
  *
  * @param {File} file
- * @param {{kind: "trip"|"product", ownerId: string}} destino
+ * @param {{kind: "trip"|"product"|"banner", ownerId: string}} destino
  */
 export async function uploadImage(file, { kind, ownerId }) {
   const { blob, contentType, resized } = await prepareImage(file);

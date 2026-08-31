@@ -1,18 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ShoppingBag, ExternalLink, Info, Search, Truck, Tent, Compass, ChevronRight, X } from "lucide-react";
+import { ShoppingBag, ExternalLink, Info, Search, Truck, Tent, Compass, ChevronRight, X, SlidersHorizontal } from "lucide-react";
 import { PRODUCT_TAXONOMY, findCategory, categoryBadgeFor } from "../lib/products.js";
 import { formatBRL } from "../lib/format.js";
+import BannerHero from "../components/BannerHero.jsx";
 
 const API_PRODUCTS = "/.netlify/functions/products";
+const API_BANNERS = "/.netlify/functions/banners";
 
 const cn = (...c) => c.filter(Boolean).join(" ");
 
 const ICONS = { truck: Truck, tent: Tent, compass: Compass };
 
 // Busca sem acento: quem digita "iluminacao" precisa achar "iluminação".
-const normalize = (s) =>
-  (s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+const normalize = (s) => (s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
 const SORTS = [
   { value: "recentes", label: "Mais recentes" },
@@ -23,6 +24,7 @@ const SORTS = [
 
 export default function ProdutosPage() {
   const [products, setProducts] = useState([]);
+  const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   // Filtros na URL: link de categoria é compartilhável e o voltar funciona.
   const [params, setParams] = useSearchParams();
@@ -37,6 +39,7 @@ export default function ProdutosPage() {
     Object.entries(patch).forEach(([k, v]) => (v ? next.set(k, v) : next.delete(k)));
     setParams(next, { replace: true });
   };
+  const limpar = () => setParams(new URLSearchParams(), { replace: true });
 
   useEffect(() => {
     fetch(API_PRODUCTS)
@@ -44,13 +47,15 @@ export default function ProdutosPage() {
       .then((d) => Array.isArray(d) && setProducts(d))
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
+    fetch(API_BANNERS)
+      .then((r) => r.json())
+      .then((d) => Array.isArray(d) && setBanners(d))
+      .catch(() => setBanners([]));
   }, []);
 
-  const countByCategory = useMemo(() => {
-    const acc = {};
-    products.forEach((p) => { if (p.category) acc[p.category] = (acc[p.category] || 0) + 1; });
-    return acc;
-  }, [products]);
+  const contarCategoria = (valor) => products.filter((p) => p.category === valor).length;
+  const contarSub = (cat, sub) =>
+    products.filter((p) => p.category === cat && p.subcategory === sub).length;
 
   const naCategoria = useMemo(
     () => (categoria ? products.filter((p) => p.category === categoria) : products),
@@ -72,151 +77,240 @@ export default function ProdutosPage() {
         normalize(`${p.name} ${p.description || ""} ${p.subcategory || ""}`).includes(termo)
       );
     }
-    const comPreco = (p) => (p.price == null ? Infinity : Number(p.price));
+    const semPrecoNoFim = (p) => (p.price == null ? Infinity : Number(p.price));
     const ordenada = [...lista];
-    if (ordem === "menor") ordenada.sort((a, b) => comPreco(a) - comPreco(b));
+    if (ordem === "menor") ordenada.sort((a, b) => semPrecoNoFim(a) - semPrecoNoFim(b));
     else if (ordem === "maior") ordenada.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
     else if (ordem === "az") ordenada.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
     return ordenada;
   }, [naCategoria, subcategoria, busca, ordem]);
 
-  const temFiltro = categoria || subcategoria || busca;
+  const temFiltro = Boolean(categoria || subcategoria || busca);
 
   return (
-    <div className="py-8">
-      <header>
-        <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-xl bg-[var(--sand)] grid place-items-center text-[var(--moss)]">
-            <ShoppingBag className="w-5 h-5" />
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Loja</h1>
-        </div>
-        <p className="mt-1 text-sm text-neutral-600">
-          Equipamento de offroad, camping e viagem — escolhido a dedo por quem roda com ele.
-        </p>
-      </header>
+    <div className="py-6">
+      <BannerHero banners={banners} />
 
-      <p className="mt-4 flex items-start gap-2 rounded-2xl bg-[var(--sand)] px-4 py-3 text-xs text-neutral-700">
-        <Info className="mt-0.5 h-4 w-4 shrink-0" />
-        <span>
-          Os links levam ao Mercado Livre. Somos afiliados: se você comprar por aqui, podemos receber
-          uma comissão, <strong>sem custo adicional para você</strong>. Preço e disponibilidade são os
-          do Mercado Livre no momento da compra.
-        </span>
-      </p>
-
-      {/* Vitrine de categorias */}
-      {/* Sempre em 3 colunas: empilhadas no celular, as vitrines empurravam o
-          primeiro produto para mais de uma tela abaixo. */}
-      <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-4">
-        {PRODUCT_TAXONOMY.map((cat) => {
-          const Icone = ICONS[cat.icon] ?? ShoppingBag;
-          const ativa = categoria === cat.value;
-          const total = countByCategory[cat.value] || 0;
-          return (
+      {/* Trilha: mostra onde o visitante está e como voltar. */}
+      <nav aria-label="Você está em" className="mt-6 flex flex-wrap items-center gap-1 text-sm text-neutral-500">
+        <button type="button" onClick={limpar} className="hover:text-[var(--fg)] hover:underline">
+          Loja
+        </button>
+        {categoria && (
+          <>
+            <ChevronRight className="h-3.5 w-3.5" />
             <button
-              key={cat.value}
               type="button"
-              onClick={() => setParam({ c: ativa ? "" : cat.value, s: "" })}
-              className={cn(
-                "group rounded-3xl border p-3 text-center transition sm:p-5 sm:text-left",
-                ativa
-                  ? "border-[var(--moss)] bg-white shadow-sm ring-1 ring-[var(--moss)]"
-                  : "border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-sm"
-              )}
+              onClick={() => setParam({ s: "" })}
+              className={cn(subcategoria ? "hover:text-[var(--fg)] hover:underline" : "font-medium text-[var(--fg)]")}
             >
-              <div className="flex flex-col items-center sm:flex-row sm:items-start sm:justify-between">
-                <div
-                  className={cn(
-                    "grid h-10 w-10 place-items-center rounded-2xl transition sm:h-11 sm:w-11",
-                    ativa ? "bg-[var(--moss)] text-white" : "bg-[var(--sand)] text-[var(--moss)]"
-                  )}
-                >
-                  <Icone className="h-5 w-5" />
-                </div>
-                <span className="mt-1 text-xs text-neutral-500 sm:mt-0">
-                  {total} {total === 1 ? "item" : "itens"}
-                </span>
-              </div>
-              <h2 className="mt-1 text-sm font-semibold sm:mt-3 sm:text-base">{cat.value}</h2>
-              <p className="mt-1 hidden text-sm text-neutral-600 sm:block">{cat.blurb}</p>
-              <span className="mt-3 hidden items-center gap-1 text-sm text-[var(--moss)] sm:inline-flex">
-                {ativa ? "Vendo esta categoria" : "Ver produtos"}
-                <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-              </span>
+              {categoria}
             </button>
-          );
-        })}
-      </div>
-
-      {/* Subcategorias da categoria escolhida */}
-      {categoria && subcategoriasComProduto.length > 0 && (
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Chip active={!subcategoria} onClick={() => setParam({ s: "" })}>
-            Tudo em {categoria}
-          </Chip>
-          {subcategoriasComProduto.map((sc) => (
-            <Chip key={sc} active={subcategoria === sc} onClick={() => setParam({ s: sc })}>
-              {sc}
-            </Chip>
-          ))}
-        </div>
-      )}
-
-      {/* Busca e ordenação */}
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-          <input
-            value={busca}
-            onChange={(e) => setParam({ q: e.target.value })}
-            placeholder="Buscar por nome ou descrição…"
-            className="w-full rounded-2xl border border-neutral-300 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]"
-          />
-        </div>
-        <select
-          value={ordem}
-          onChange={(e) => setParam({ ord: e.target.value === "recentes" ? "" : e.target.value })}
-          className="rounded-2xl border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]"
-        >
-          {SORTS.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="mt-4 flex items-center justify-between text-sm text-neutral-600">
-        <span>
-          {visiveis.length} {visiveis.length === 1 ? "produto" : "produtos"}
-          {categoria && <> em <strong className="font-medium">{subcategoria || categoria}</strong></>}
-        </span>
-        {temFiltro && (
-          <button
-            type="button"
-            onClick={() => setParams(new URLSearchParams(), { replace: true })}
-            className="inline-flex items-center gap-1 hover:underline"
-          >
-            <X className="h-3.5 w-3.5" /> limpar filtros
-          </button>
+          </>
         )}
-      </div>
+        {subcategoria && (
+          <>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <span className="font-medium text-[var(--fg)]">{subcategoria}</span>
+          </>
+        )}
+      </nav>
 
-      {loading ? (
-        <p className="py-16 text-center text-neutral-600">Carregando…</p>
-      ) : visiveis.length === 0 ? (
-        <p className="py-16 text-center text-neutral-500">
-          {products.length === 0
-            ? "Nenhum produto por aqui ainda. Volte em breve!"
-            : "Nada encontrado com esses filtros."}
-        </p>
-      ) : (
-        <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {visiveis.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
+      <div className="mt-4 grid gap-8 lg:grid-cols-[15rem_1fr]">
+        {/* Menu lateral: o mapa da loja, sempre visível no desktop. */}
+        <aside className="hidden lg:block">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+            <SlidersHorizontal className="h-4 w-4" /> Categorias
+          </h2>
+          <ul className="space-y-1 text-sm">
+            <li>
+              <button
+                type="button"
+                onClick={limpar}
+                className={cn(
+                  "flex w-full items-center justify-between rounded-xl px-3 py-2 transition",
+                  !categoria ? "bg-[var(--moss)] text-white" : "hover:bg-white"
+                )}
+              >
+                Todas as categorias
+                <span className={cn("text-xs", !categoria ? "text-white/80" : "text-neutral-500")}>
+                  {products.length}
+                </span>
+              </button>
+            </li>
+            {PRODUCT_TAXONOMY.map((cat) => {
+              const Icone = ICONS[cat.icon] ?? ShoppingBag;
+              const ativa = categoria === cat.value;
+              return (
+                <li key={cat.value}>
+                  <button
+                    type="button"
+                    onClick={() => setParam({ c: cat.value, s: "" })}
+                    className={cn(
+                      "flex w-full items-center justify-between rounded-xl px-3 py-2 transition",
+                      ativa ? "bg-[var(--sand)] font-medium" : "hover:bg-white"
+                    )}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Icone className="h-4 w-4 text-[var(--moss)]" /> {cat.value}
+                    </span>
+                    <span className="text-xs text-neutral-500">{contarCategoria(cat.value)}</span>
+                  </button>
+
+                  {/* Subcategorias só da categoria aberta, como em loja de verdade. */}
+                  {ativa && subcategoriasComProduto.length > 0 && (
+                    <ul className="mb-2 ml-4 mt-1 space-y-0.5 border-l pl-3">
+                      {subcategoriasComProduto.map((sc) => (
+                        <li key={sc}>
+                          <button
+                            type="button"
+                            onClick={() => setParam({ s: subcategoria === sc ? "" : sc })}
+                            className={cn(
+                              "flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left transition",
+                              subcategoria === sc
+                                ? "font-medium text-[var(--moss)]"
+                                : "text-neutral-600 hover:text-[var(--fg)]"
+                            )}
+                          >
+                            {sc}
+                            <span className="text-xs text-neutral-400">{contarSub(cat.value, sc)}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+
+          <p className="mt-6 flex items-start gap-2 rounded-2xl bg-[var(--sand)] px-3 py-3 text-xs text-neutral-700">
+            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>
+              Somos afiliados do Mercado Livre. Comprando por aqui podemos receber comissão,
+              <strong> sem custo adicional para você</strong>.
+            </span>
+          </p>
+        </aside>
+
+        <div>
+          {/* No celular não cabe menu lateral: vira faixa de categorias. */}
+          <div className="lg:hidden">
+            <div className="grid grid-cols-4 gap-2">
+              <CategoriaCompacta ativa={!categoria} total={products.length} onClick={limpar} label="Tudo" />
+              {PRODUCT_TAXONOMY.map((cat) => (
+                <CategoriaCompacta
+                  key={cat.value}
+                  Icone={ICONS[cat.icon] ?? ShoppingBag}
+                  ativa={categoria === cat.value}
+                  total={contarCategoria(cat.value)}
+                  label={cat.value}
+                  onClick={() => setParam({ c: cat.value, s: "" })}
+                />
+              ))}
+            </div>
+            {categoria && subcategoriasComProduto.length > 0 && (
+              <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                <Chip active={!subcategoria} onClick={() => setParam({ s: "" })}>Tudo</Chip>
+                {subcategoriasComProduto.map((sc) => (
+                  <Chip key={sc} active={subcategoria === sc} onClick={() => setParam({ s: sc })}>
+                    {sc}
+                  </Chip>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center lg:mt-0">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+              <input
+                value={busca}
+                onChange={(e) => setParam({ q: e.target.value })}
+                placeholder="Buscar em toda a loja…"
+                className="w-full rounded-2xl border border-neutral-300 bg-white py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]"
+              />
+            </div>
+            <select
+              value={ordem}
+              onChange={(e) => setParam({ ord: e.target.value === "recentes" ? "" : e.target.value })}
+              className="rounded-2xl border border-neutral-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]"
+            >
+              {SORTS.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between text-sm text-neutral-600">
+            <span>
+              <strong className="font-medium text-[var(--fg)]">{visiveis.length}</strong>{" "}
+              {visiveis.length === 1 ? "produto" : "produtos"}
+            </span>
+            {temFiltro && (
+              <button type="button" onClick={limpar} className="inline-flex items-center gap-1 hover:underline">
+                <X className="h-3.5 w-3.5" /> limpar filtros
+              </button>
+            )}
+          </div>
+
+          {loading ? (
+            <p className="py-16 text-center text-neutral-600">Carregando…</p>
+          ) : visiveis.length === 0 ? (
+            <div className="py-16 text-center">
+              <p className="text-neutral-500">
+                {products.length === 0
+                  ? "Nenhum produto por aqui ainda. Volte em breve!"
+                  : "Nada encontrado com esses filtros."}
+              </p>
+              {temFiltro && products.length > 0 && (
+                <button type="button" onClick={limpar} className="mt-3 text-sm text-[var(--moss)] hover:underline">
+                  ver todos os produtos
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {visiveis.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          )}
+
+          <p className="mt-8 flex items-start gap-2 rounded-2xl bg-[var(--sand)] px-4 py-3 text-xs text-neutral-700 lg:hidden">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              Somos afiliados do Mercado Livre. Comprando por aqui podemos receber comissão,
+              <strong> sem custo adicional para você</strong>.
+            </span>
+          </p>
         </div>
-      )}
+      </div>
     </div>
+  );
+}
+
+function CategoriaCompacta({ Icone, ativa, total, label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-2xl border p-2 text-center transition",
+        ativa ? "border-[var(--moss)] bg-white ring-1 ring-[var(--moss)]" : "border-neutral-200 bg-white"
+      )}
+    >
+      <div
+        className={cn(
+          "mx-auto grid h-8 w-8 place-items-center rounded-xl",
+          ativa ? "bg-[var(--moss)] text-white" : "bg-[var(--sand)] text-[var(--moss)]"
+        )}
+      >
+        {Icone ? <Icone className="h-4 w-4" /> : <span className="text-xs font-semibold">{total}</span>}
+      </div>
+      <span className="mt-1 block truncate text-xs font-medium">{label}</span>
+      <span className="block text-[10px] text-neutral-500">{total}</span>
+    </button>
   );
 }
 
@@ -226,7 +320,7 @@ function Chip({ active, onClick, children }) {
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-2xl border px-3 py-1.5 text-sm transition",
+        "shrink-0 rounded-2xl border px-3 py-1.5 text-sm transition",
         active
           ? "border-transparent bg-[var(--moss)] text-white"
           : "border-neutral-200 bg-white text-[var(--fg)] hover:bg-neutral-50"
@@ -266,13 +360,9 @@ function ProductCard({ product }) {
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        {product.subcategory && (
-          <span className="text-xs text-neutral-500">{product.subcategory}</span>
-        )}
+        {product.subcategory && <span className="text-xs text-neutral-500">{product.subcategory}</span>}
         <h3 className="mt-0.5 font-semibold leading-tight">{product.name}</h3>
-        {product.description && (
-          <p className="mt-2 text-sm text-neutral-600">{product.description}</p>
-        )}
+        {product.description && <p className="mt-2 text-sm text-neutral-600">{product.description}</p>}
 
         <div className="mt-auto pt-4">
           {product.price != null && (
