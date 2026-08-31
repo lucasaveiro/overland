@@ -3,7 +3,7 @@ import { Pencil, Plus, Trash2, Save, X, Upload, ShoppingBag, ExternalLink } from
 import { NumericFormat } from "react-number-format";
 import { Button, Card, CardContent, Input, Label, Textarea, Dialog } from "./Admin.jsx";
 import { uploadImage, deleteUploadedImage, isUploadedImage } from "../lib/imageUpload.js";
-import { CATEGORY_VALUES } from "../lib/products.js";
+import { CATEGORY_VALUES, subcategoriesOf } from "../lib/products.js";
 import { formatBRL } from "../lib/format.js";
 
 const API_PRODUCTS = "/.netlify/functions/products";
@@ -79,6 +79,7 @@ export default function ProductsSection() {
                   <tr className="text-left border-b">
                     <th className="py-2 pr-3 font-medium">Produto</th>
                     <th className="py-2 pr-3 font-medium">Categoria</th>
+                    <th className="py-2 pr-3 font-medium">Subcategoria</th>
                     <th className="py-2 pr-3 font-medium">Preço</th>
                     <th className="py-2 pr-3 font-medium">Link</th>
                     <th className="py-2 pr-3 font-medium">Status</th>
@@ -97,6 +98,7 @@ export default function ProductsSection() {
                         </div>
                       </td>
                       <td className="py-2 pr-3 text-neutral-600">{p.category || "—"}</td>
+                      <td className="py-2 pr-3 text-neutral-600">{p.subcategory || "—"}</td>
                       <td className="py-2 pr-3 text-neutral-600">
                         {p.price != null ? formatBRL(p.price) : "—"}
                       </td>
@@ -143,7 +145,7 @@ export default function ProductsSection() {
           <h3 className="text-lg font-semibold mb-2">Novo produto</h3>
           <ProductForm
             initial={{
-              id: newProductId, name: "", description: "", category: "",
+              id: newProductId, name: "", description: "", category: "", subcategory: "",
               price: null, imageUrl: "", affiliateUrl: "", active: true,
             }}
             onUploaded={setSessionUpload}
@@ -171,7 +173,7 @@ export default function ProductsSection() {
           <ProductForm
             initial={{
               id: editing.id, name: editing.name, description: editing.description || "",
-              category: editing.category || "", price: editing.price,
+              category: editing.category || "", subcategory: editing.subcategory || "", price: editing.price,
               imageUrl: editing.image_url || "", affiliateUrl: editing.affiliate_url || "",
               active: editing.active,
             }}
@@ -254,12 +256,27 @@ function ProductForm({ initial, onSave, onCancel, onUploaded }) {
           <Label>Categoria</Label>
           <select
             value={form.category}
-            onChange={(e) => update({ category: e.target.value })}
+            // Trocar de categoria zera a subcategoria: a lista depende dela.
+            onChange={(e) => update({ category: e.target.value, subcategory: "" })}
             className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)] border-neutral-300"
           >
             <option value="">Selecione</option>
             {CATEGORY_VALUES.map((c) => (
               <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label>Subcategoria</Label>
+          <select
+            value={form.subcategory}
+            onChange={(e) => update({ subcategory: e.target.value })}
+            disabled={!form.category}
+            className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)] border-neutral-300 disabled:bg-neutral-100 disabled:text-neutral-400"
+          >
+            <option value="">{form.category ? "Selecione" : "Escolha a categoria antes"}</option>
+            {subcategoriesOf(form.category).map((sc) => (
+              <option key={sc} value={sc}>{sc}</option>
             ))}
           </select>
         </div>
