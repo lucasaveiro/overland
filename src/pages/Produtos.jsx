@@ -1,16 +1,23 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ShoppingBag, ExternalLink, Info, Search, Truck, Tent, Compass, ChevronRight, X, SlidersHorizontal } from "lucide-react";
-import { PRODUCT_TAXONOMY, findCategory, categoryBadgeFor } from "../lib/products.js";
+import {
+  ShoppingBag, ExternalLink, Info, Search, Truck, Tent, Compass, Mountain,
+  Wrench, Zap, Package, ChevronRight, X, SlidersHorizontal,
+} from "lucide-react";
+import { colorClassFor } from "../lib/products.js";
 import { formatBRL } from "../lib/format.js";
 import BannerHero from "../components/BannerHero.jsx";
 
 const API_PRODUCTS = "/.netlify/functions/products";
 const API_BANNERS = "/.netlify/functions/banners";
+const API_CATEGORIES = "/.netlify/functions/categories";
 
 const cn = (...c) => c.filter(Boolean).join(" ");
 
-const ICONS = { truck: Truck, tent: Tent, compass: Compass };
+export const ICONS = {
+  truck: Truck, tent: Tent, compass: Compass, mountain: Mountain,
+  wrench: Wrench, zap: Zap, package: Package, "shopping-bag": ShoppingBag,
+};
 
 // Busca sem acento: quem digita "iluminacao" precisa achar "iluminação".
 const normalize = (s) => (s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
@@ -24,13 +31,15 @@ const SORTS = [
 
 export default function ProdutosPage() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
-  // Filtros na URL: link de categoria é compartilhável e o voltar funciona.
+  // Filtros na URL por slug: link de categoria é compartilhável e o banner
+  // pode apontar direto para /produtos?c=viatura-offgrid.
   const [params, setParams] = useSearchParams();
 
-  const categoria = params.get("c") || "";
-  const subcategoria = params.get("s") || "";
+  const catSlug = params.get("c") || "";
+  const subSlug = params.get("s") || "";
   const busca = params.get("q") || "";
   const ordem = params.get("ord") || "recentes";
 
@@ -42,40 +51,51 @@ export default function ProdutosPage() {
   const limpar = () => setParams(new URLSearchParams(), { replace: true });
 
   useEffect(() => {
-    fetch(API_PRODUCTS)
-      .then((r) => r.json())
-      .then((d) => Array.isArray(d) && setProducts(d))
-      .catch(() => setProducts([]))
-      .finally(() => setLoading(false));
-    fetch(API_BANNERS)
-      .then((r) => r.json())
-      .then((d) => Array.isArray(d) && setBanners(d))
-      .catch(() => setBanners([]));
+    Promise.all([
+      fetch(API_PRODUCTS).then((r) => r.json()).catch(() => []),
+      fetch(API_CATEGORIES).then((r) => r.json()).catch(() => []),
+      fetch(API_BANNERS).then((r) => r.json()).catch(() => []),
+    ]).then(([p, c, b]) => {
+      if (Array.isArray(p)) setProducts(p);
+      if (Array.isArray(c)) setCategories(c);
+      if (Array.isArray(b)) setBanners(b);
+      setLoading(false);
+    });
   }, []);
 
-  const contarCategoria = (valor) => products.filter((p) => p.category === valor).length;
-  const contarSub = (cat, sub) =>
-    products.filter((p) => p.category === cat && p.subcategory === sub).length;
+  const categoriaAtual = categories.find((c) => c.slug === catSlug) || null;
+
+  // Um produto pode estar em várias categorias: basta uma bater.
+  const estaNaCategoria = (p, slug) => (p.categories || []).some((a) => a.categorySlug === slug);
+  const estaNaSub = (p, slug) => (p.categories || []).some((a) => a.subcategorySlug === slug);
+
+  const contarCategoria = (slug) => products.filter((p) => estaNaCategoria(p, slug)).length;
+  const contarSub = (slug) => products.filter((p) => estaNaSub(p, slug)).length;
 
   const naCategoria = useMemo(
-    () => (categoria ? products.filter((p) => p.category === categoria) : products),
-    [products, categoria]
+    () => (catSlug ? products.filter((p) => estaNaCategoria(p, catSlug)) : products),
+    [products, catSlug]
   );
 
   // Só oferece subcategoria que tem produto — filtro que não filtra nada frustra.
-  const subcategoriasComProduto = useMemo(() => {
-    const usadas = new Set(naCategoria.map((p) => p.subcategory).filter(Boolean));
-    return (findCategory(categoria)?.subcategories || []).filter((sc) => usadas.has(sc));
-  }, [naCategoria, categoria]);
+  const subsComProduto = useMemo(() => {
+    const usados = new Set(naCategoria.flatMap((p) => (p.categories || []).map((a) => a.subcategorySlug)));
+    return (categoriaAtual?.subcategories || []).filter((sc) => usados.has(sc.slug));
+  }, [naCategoria, categoriaAtual]);
+
+  const subAtual = subsComProduto.find((s) => s.slug === subSlug) || null;
 
   const visiveis = useMemo(() => {
     let lista = naCategoria;
-    if (subcategoria) lista = lista.filter((p) => p.subcategory === subcategoria);
+    if (subSlug) lista = lista.filter((p) => estaNaSub(p, subSlug));
     if (busca) {
       const termo = normalize(busca);
-      lista = lista.filter((p) =>
-        normalize(`${p.name} ${p.description || ""} ${p.subcategory || ""}`).includes(termo)
-      );
+      lista = lista.filter((p) => {
+        const rotulos = (p.categories || [])
+          .map((a) => `${a.categoryName || ""} ${a.subcategoryName || ""}`)
+          .join(" ");
+        return normalize(`${p.name} ${p.description || ""} ${rotulos}`).includes(termo);
+      });
     }
     const semPrecoNoFim = (p) => (p.price == null ? Infinity : Number(p.price));
     const ordenada = [...lista];
@@ -83,41 +103,37 @@ export default function ProdutosPage() {
     else if (ordem === "maior") ordenada.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
     else if (ordem === "az") ordenada.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
     return ordenada;
-  }, [naCategoria, subcategoria, busca, ordem]);
+  }, [naCategoria, subSlug, busca, ordem]);
 
-  const temFiltro = Boolean(categoria || subcategoria || busca);
+  const temFiltro = Boolean(catSlug || subSlug || busca);
 
   return (
     <div className="py-6">
       <BannerHero banners={banners} />
 
-      {/* Trilha: mostra onde o visitante está e como voltar. */}
       <nav aria-label="Você está em" className="mt-6 flex flex-wrap items-center gap-1 text-sm text-neutral-500">
-        <button type="button" onClick={limpar} className="hover:text-[var(--fg)] hover:underline">
-          Loja
-        </button>
-        {categoria && (
+        <button type="button" onClick={limpar} className="hover:text-[var(--fg)] hover:underline">Loja</button>
+        {categoriaAtual && (
           <>
             <ChevronRight className="h-3.5 w-3.5" />
             <button
               type="button"
               onClick={() => setParam({ s: "" })}
-              className={cn(subcategoria ? "hover:text-[var(--fg)] hover:underline" : "font-medium text-[var(--fg)]")}
+              className={cn(subAtual ? "hover:text-[var(--fg)] hover:underline" : "font-medium text-[var(--fg)]")}
             >
-              {categoria}
+              {categoriaAtual.name}
             </button>
           </>
         )}
-        {subcategoria && (
+        {subAtual && (
           <>
             <ChevronRight className="h-3.5 w-3.5" />
-            <span className="font-medium text-[var(--fg)]">{subcategoria}</span>
+            <span className="font-medium text-[var(--fg)]">{subAtual.name}</span>
           </>
         )}
       </nav>
 
       <div className="mt-4 grid gap-8 lg:grid-cols-[15rem_1fr]">
-        {/* Menu lateral: o mapa da loja, sempre visível no desktop. */}
         <aside className="hidden lg:block">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
             <SlidersHorizontal className="h-4 w-4" /> Categorias
@@ -129,51 +145,50 @@ export default function ProdutosPage() {
                 onClick={limpar}
                 className={cn(
                   "flex w-full items-center justify-between rounded-xl px-3 py-2 transition",
-                  !categoria ? "bg-[var(--moss)] text-white" : "hover:bg-white"
+                  !catSlug ? "bg-[var(--moss)] text-white" : "hover:bg-white"
                 )}
               >
                 Todas as categorias
-                <span className={cn("text-xs", !categoria ? "text-white/80" : "text-neutral-500")}>
+                <span className={cn("text-xs", !catSlug ? "text-white/80" : "text-neutral-500")}>
                   {products.length}
                 </span>
               </button>
             </li>
-            {PRODUCT_TAXONOMY.map((cat) => {
+            {categories.map((cat) => {
               const Icone = ICONS[cat.icon] ?? ShoppingBag;
-              const ativa = categoria === cat.value;
+              const ativa = catSlug === cat.slug;
               return (
-                <li key={cat.value}>
+                <li key={cat.id}>
                   <button
                     type="button"
-                    onClick={() => setParam({ c: cat.value, s: "" })}
+                    onClick={() => setParam({ c: cat.slug, s: "" })}
                     className={cn(
                       "flex w-full items-center justify-between rounded-xl px-3 py-2 transition",
                       ativa ? "bg-[var(--sand)] font-medium" : "hover:bg-white"
                     )}
                   >
-                    <span className="flex items-center gap-2">
-                      <Icone className="h-4 w-4 text-[var(--moss)]" /> {cat.value}
+                    <span className="flex items-center gap-2 text-left">
+                      <Icone className="h-4 w-4 shrink-0 text-[var(--moss)]" /> {cat.name}
                     </span>
-                    <span className="text-xs text-neutral-500">{contarCategoria(cat.value)}</span>
+                    <span className="text-xs text-neutral-500">{contarCategoria(cat.slug)}</span>
                   </button>
 
-                  {/* Subcategorias só da categoria aberta, como em loja de verdade. */}
-                  {ativa && subcategoriasComProduto.length > 0 && (
+                  {ativa && subsComProduto.length > 0 && (
                     <ul className="mb-2 ml-4 mt-1 space-y-0.5 border-l pl-3">
-                      {subcategoriasComProduto.map((sc) => (
-                        <li key={sc}>
+                      {subsComProduto.map((sc) => (
+                        <li key={sc.id}>
                           <button
                             type="button"
-                            onClick={() => setParam({ s: subcategoria === sc ? "" : sc })}
+                            onClick={() => setParam({ s: subSlug === sc.slug ? "" : sc.slug })}
                             className={cn(
                               "flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left transition",
-                              subcategoria === sc
+                              subSlug === sc.slug
                                 ? "font-medium text-[var(--moss)]"
                                 : "text-neutral-600 hover:text-[var(--fg)]"
                             )}
                           >
-                            {sc}
-                            <span className="text-xs text-neutral-400">{contarSub(cat.value, sc)}</span>
+                            {sc.name}
+                            <span className="text-xs text-neutral-400">{contarSub(sc.slug)}</span>
                           </button>
                         </li>
                       ))}
@@ -184,37 +199,31 @@ export default function ProdutosPage() {
             })}
           </ul>
 
-          <p className="mt-6 flex items-start gap-2 rounded-2xl bg-[var(--sand)] px-3 py-3 text-xs text-neutral-700">
-            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>
-              Somos afiliados do Mercado Livre. Comprando por aqui podemos receber comissão,
-              <strong> sem custo adicional para você</strong>.
-            </span>
-          </p>
+          <AvisoAfiliado className="mt-6" />
         </aside>
 
         <div>
-          {/* No celular não cabe menu lateral: vira faixa de categorias. */}
+          {/* No celular não cabe menu lateral: vira faixa rolável de categorias. */}
           <div className="lg:hidden">
-            <div className="grid grid-cols-4 gap-2">
-              <CategoriaCompacta ativa={!categoria} total={products.length} onClick={limpar} label="Tudo" />
-              {PRODUCT_TAXONOMY.map((cat) => (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              <CategoriaCompacta ativa={!catSlug} total={products.length} label="Tudo" onClick={limpar} />
+              {categories.map((cat) => (
                 <CategoriaCompacta
-                  key={cat.value}
+                  key={cat.id}
                   Icone={ICONS[cat.icon] ?? ShoppingBag}
-                  ativa={categoria === cat.value}
-                  total={contarCategoria(cat.value)}
-                  label={cat.value}
-                  onClick={() => setParam({ c: cat.value, s: "" })}
+                  ativa={catSlug === cat.slug}
+                  total={contarCategoria(cat.slug)}
+                  label={cat.name}
+                  onClick={() => setParam({ c: cat.slug, s: "" })}
                 />
               ))}
             </div>
-            {categoria && subcategoriasComProduto.length > 0 && (
+            {subsComProduto.length > 0 && (
               <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-                <Chip active={!subcategoria} onClick={() => setParam({ s: "" })}>Tudo</Chip>
-                {subcategoriasComProduto.map((sc) => (
-                  <Chip key={sc} active={subcategoria === sc} onClick={() => setParam({ s: sc })}>
-                    {sc}
+                <Chip active={!subSlug} onClick={() => setParam({ s: "" })}>Tudo</Chip>
+                {subsComProduto.map((sc) => (
+                  <Chip key={sc.id} active={subSlug === sc.slug} onClick={() => setParam({ s: sc.slug })}>
+                    {sc.name}
                   </Chip>
                 ))}
               </div>
@@ -272,21 +281,27 @@ export default function ProdutosPage() {
           ) : (
             <div className="mt-4 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {visiveis.map((p) => (
-                <ProductCard key={p.id} product={p} />
+                <ProductCard key={p.id} product={p} destaque={catSlug} />
               ))}
             </div>
           )}
 
-          <p className="mt-8 flex items-start gap-2 rounded-2xl bg-[var(--sand)] px-4 py-3 text-xs text-neutral-700 lg:hidden">
-            <Info className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>
-              Somos afiliados do Mercado Livre. Comprando por aqui podemos receber comissão,
-              <strong> sem custo adicional para você</strong>.
-            </span>
-          </p>
+          <AvisoAfiliado className="mt-8 lg:hidden" />
         </div>
       </div>
     </div>
+  );
+}
+
+function AvisoAfiliado({ className }) {
+  return (
+    <p className={cn("flex items-start gap-2 rounded-2xl bg-[var(--sand)] px-3 py-3 text-xs text-neutral-700", className)}>
+      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span>
+        Somos afiliados do Mercado Livre. Comprando por aqui podemos receber comissão,
+        <strong> sem custo adicional para você</strong>.
+      </span>
+    </p>
   );
 }
 
@@ -296,7 +311,7 @@ function CategoriaCompacta({ Icone, ativa, total, label, onClick }) {
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-2xl border p-2 text-center transition",
+        "w-24 shrink-0 rounded-2xl border p-2 text-center transition",
         ativa ? "border-[var(--moss)] bg-white ring-1 ring-[var(--moss)]" : "border-neutral-200 bg-white"
       )}
     >
@@ -331,7 +346,13 @@ function Chip({ active, onClick, children }) {
   );
 }
 
-function ProductCard({ product }) {
+function ProductCard({ product, destaque }) {
+  const vinculos = product.categories || [];
+  // Quando o visitante está dentro de uma categoria, mostra a subcategoria
+  // dela; fora, mostra as categorias a que o produto pertence.
+  const doDestaque = destaque ? vinculos.find((a) => a.categorySlug === destaque) : null;
+  const badges = destaque ? vinculos.filter((a) => a.categorySlug === destaque) : vinculos.slice(0, 2);
+
   return (
     <article className="group flex flex-col overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:shadow-md">
       <div className="relative aspect-[4/3] w-full bg-neutral-50">
@@ -347,20 +368,27 @@ function ProductCard({ product }) {
             <ShoppingBag className="h-10 w-10" />
           </div>
         )}
-        {product.category && (
-          <span
-            className={cn(
-              "absolute left-3 top-3 rounded px-2 py-0.5 text-[10px] font-medium",
-              categoryBadgeFor(product.category)
-            )}
-          >
-            {product.category}
-          </span>
-        )}
+        <div className="absolute left-3 top-3 flex flex-wrap gap-1">
+          {badges.map((a) => (
+            <span
+              key={a.categoryId}
+              className={cn("rounded px-2 py-0.5 text-[10px] font-medium", colorClassFor(a.categoryColor))}
+            >
+              {a.categoryName}
+            </span>
+          ))}
+          {!destaque && vinculos.length > 2 && (
+            <span className="rounded bg-white/90 px-2 py-0.5 text-[10px] font-medium text-neutral-700">
+              +{vinculos.length - 2}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        {product.subcategory && <span className="text-xs text-neutral-500">{product.subcategory}</span>}
+        {doDestaque?.subcategoryName && (
+          <span className="text-xs text-neutral-500">{doDestaque.subcategoryName}</span>
+        )}
         <h3 className="mt-0.5 font-semibold leading-tight">{product.name}</h3>
         {product.description && <p className="mt-2 text-sm text-neutral-600">{product.description}</p>}
 

@@ -3,13 +3,15 @@ import { Pencil, Plus, Trash2, Save, X, Upload, ShoppingBag, ExternalLink } from
 import { NumericFormat } from "react-number-format";
 import { Button, Card, CardContent, Input, Label, Textarea, Dialog } from "./Admin.jsx";
 import { uploadImage, deleteUploadedImage, isUploadedImage } from "../lib/imageUpload.js";
-import { CATEGORY_VALUES, subcategoriesOf } from "../lib/products.js";
+import { colorClassFor } from "../lib/products.js";
 import { formatBRL } from "../lib/format.js";
 
 const API_PRODUCTS = "/.netlify/functions/products";
+const API_CATEGORIES = "/.netlify/functions/categories";
 
-export default function ProductsSection() {
+export default function ProductsSection({ categoriesVersion = 0 }) {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [editing, setEditing] = useState(null);
   const [newProductId, setNewProductId] = useState(null);
   // Imagem enviada neste diálogo, para descartar caso não seja salva.
@@ -22,7 +24,15 @@ export default function ProductsSection() {
       .catch(() => setProducts([]));
   }, []);
 
-  // Cancelar: apaga o que subiu e não chegou a ser salvo.
+  // Recarrega quando o admin mexe nas categorias, para o formulário não
+  // oferecer uma lista velha.
+  useEffect(() => {
+    fetch(`${API_CATEGORIES}?all=1`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => Array.isArray(d) && setCategories(d))
+      .catch(() => setCategories([]));
+  }, [categoriesVersion]);
+
   const discard = (close) => {
     const orfa = sessionUpload;
     setSessionUpload(null);
@@ -30,7 +40,6 @@ export default function ProductsSection() {
     if (orfa) deleteUploadedImage(orfa);
   };
 
-  // Salvar: apaga a imagem substituída e a que subiu mas ficou de fora.
   const reconcile = (previous, saved) => {
     const candidatas = [sessionUpload, previous].filter(Boolean);
     setSessionUpload(null);
@@ -78,8 +87,7 @@ export default function ProductsSection() {
                 <thead>
                   <tr className="text-left border-b">
                     <th className="py-2 pr-3 font-medium">Produto</th>
-                    <th className="py-2 pr-3 font-medium">Categoria</th>
-                    <th className="py-2 pr-3 font-medium">Subcategoria</th>
+                    <th className="py-2 pr-3 font-medium">Categorias</th>
                     <th className="py-2 pr-3 font-medium">Preço</th>
                     <th className="py-2 pr-3 font-medium">Link</th>
                     <th className="py-2 pr-3 font-medium">Status</th>
@@ -97,8 +105,24 @@ export default function ProductsSection() {
                           <span className="font-medium">{p.name}</span>
                         </div>
                       </td>
-                      <td className="py-2 pr-3 text-neutral-600">{p.category || "—"}</td>
-                      <td className="py-2 pr-3 text-neutral-600">{p.subcategory || "—"}</td>
+                      <td className="py-2 pr-3">
+                        {(p.categories || []).length === 0 ? (
+                          <span className="text-neutral-400">—</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {p.categories.map((a) => (
+                              <span
+                                key={a.categoryId}
+                                className={`rounded px-2 py-0.5 text-[10px] font-medium ${colorClassFor(a.categoryColor)}`}
+                                title={a.subcategoryName || "sem subcategoria"}
+                              >
+                                {a.categoryName}
+                                {a.subcategoryName ? ` › ${a.subcategoryName}` : ""}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
                       <td className="py-2 pr-3 text-neutral-600">
                         {p.price != null ? formatBRL(p.price) : "—"}
                       </td>
@@ -144,8 +168,9 @@ export default function ProductsSection() {
         <Dialog onClose={() => discard(() => setNewProductId(null))}>
           <h3 className="text-lg font-semibold mb-2">Novo produto</h3>
           <ProductForm
+            categories={categories}
             initial={{
-              id: newProductId, name: "", description: "", category: "", subcategory: "",
+              id: newProductId, name: "", description: "", assignments: [],
               price: null, imageUrl: "", affiliateUrl: "", active: true,
             }}
             onUploaded={setSessionUpload}
@@ -171,11 +196,14 @@ export default function ProductsSection() {
         <Dialog onClose={() => discard(() => setEditing(null))}>
           <h3 className="text-lg font-semibold mb-2">Editar produto</h3>
           <ProductForm
+            categories={categories}
             initial={{
               id: editing.id, name: editing.name, description: editing.description || "",
-              category: editing.category || "", subcategory: editing.subcategory || "", price: editing.price,
-              imageUrl: editing.image_url || "", affiliateUrl: editing.affiliate_url || "",
-              active: editing.active,
+              assignments: (editing.categories || []).map((a) => ({
+                categoryId: a.categoryId, subcategoryId: a.subcategoryId,
+              })),
+              price: editing.price, imageUrl: editing.image_url || "",
+              affiliateUrl: editing.affiliate_url || "", active: editing.active,
             }}
             onUploaded={setSessionUpload}
             onCancel={() => discard(() => setEditing(null))}
@@ -200,7 +228,7 @@ export default function ProductsSection() {
   );
 }
 
-function ProductForm({ initial, onSave, onCancel, onUploaded }) {
+function ProductForm({ initial, categories, onSave, onCancel, onUploaded }) {
   const [form, setForm] = useState(() => ({ ...initial }));
   const [uploading, setUploading] = useState(false);
   const [uploadNote, setUploadNote] = useState("");
@@ -210,6 +238,22 @@ function ProductForm({ initial, onSave, onCancel, onUploaded }) {
   // render do pai, o que zeraria o formulário em digitação.
   useEffect(() => setForm({ ...initial }), [initial.id]);
   const update = (patch) => setForm((f) => ({ ...f, ...patch }));
+
+  const vinculoDe = (categoryId) => form.assignments.find((a) => a.categoryId === categoryId);
+
+  const alternarCategoria = (categoryId, marcada) =>
+    update({
+      assignments: marcada
+        ? [...form.assignments, { categoryId, subcategoryId: null }]
+        : form.assignments.filter((a) => a.categoryId !== categoryId),
+    });
+
+  const definirSub = (categoryId, subcategoryId) =>
+    update({
+      assignments: form.assignments.map((a) =>
+        a.categoryId === categoryId ? { ...a, subcategoryId: subcategoryId || null } : a
+      ),
+    });
 
   const handleFile = async (fileList) => {
     const file = (fileList || [])[0];
@@ -251,35 +295,53 @@ function ProductForm({ initial, onSave, onCancel, onUploaded }) {
         </p>
       </div>
 
+      <div>
+        <Label>Categorias do produto</Label>
+        <p className="mb-2 text-xs text-neutral-500">
+          Marque quantas quiser. Ex.: a roda fica em Offroad › Pneus e rodas e também em Viatura Offgrid.
+        </p>
+        {categories.length === 0 ? (
+          <p className="rounded-xl bg-[var(--sand)] px-3 py-2 text-xs text-neutral-600">
+            Nenhuma categoria cadastrada ainda. Crie em “Categorias da loja”.
+          </p>
+        ) : (
+          <div className="divide-y rounded-2xl border border-neutral-200">
+            {categories.map((cat) => {
+              const vinculo = vinculoDe(cat.id);
+              return (
+                <div key={cat.id} className="flex flex-col gap-2 p-2 sm:flex-row sm:items-center">
+                  <label className="flex flex-1 items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={!!vinculo}
+                      onChange={(e) => alternarCategoria(cat.id, e.target.checked)}
+                    />
+                    <span className={`rounded px-2 py-0.5 text-[10px] font-medium ${colorClassFor(cat.color)}`}>
+                      {cat.name}
+                    </span>
+                    {!cat.active && <span className="text-xs text-neutral-400">(oculta na loja)</span>}
+                  </label>
+                  <select
+                    value={vinculo?.subcategoryId || ""}
+                    disabled={!vinculo || (cat.subcategories || []).length === 0}
+                    onChange={(e) => definirSub(cat.id, e.target.value)}
+                    className="rounded-xl border px-3 py-1.5 text-sm border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[var(--moss)] disabled:bg-neutral-100 disabled:text-neutral-400 sm:w-56"
+                  >
+                    <option value="">
+                      {(cat.subcategories || []).length === 0 ? "sem subcategorias" : "— sem subcategoria —"}
+                    </option>
+                    {(cat.subcategories || []).map((sc) => (
+                      <option key={sc.id} value={sc.id}>{sc.name}</option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <Label>Categoria</Label>
-          <select
-            value={form.category}
-            // Trocar de categoria zera a subcategoria: a lista depende dela.
-            onChange={(e) => update({ category: e.target.value, subcategory: "" })}
-            className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)] border-neutral-300"
-          >
-            <option value="">Selecione</option>
-            {CATEGORY_VALUES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <Label>Subcategoria</Label>
-          <select
-            value={form.subcategory}
-            onChange={(e) => update({ subcategory: e.target.value })}
-            disabled={!form.category}
-            className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)] border-neutral-300 disabled:bg-neutral-100 disabled:text-neutral-400"
-          >
-            <option value="">{form.category ? "Selecione" : "Escolha a categoria antes"}</option>
-            {subcategoriesOf(form.category).map((sc) => (
-              <option key={sc} value={sc}>{sc}</option>
-            ))}
-          </select>
-        </div>
         <div>
           <Label>Preço de referência</Label>
           <NumericFormat
@@ -291,11 +353,10 @@ function ProductForm({ initial, onSave, onCancel, onUploaded }) {
           />
           <p className="text-xs text-neutral-500 mt-1">Opcional. Quem manda é o preço do Mercado Livre na hora da compra.</p>
         </div>
-      </div>
-
-      <div>
-        <Label>Descrição</Label>
-        <Textarea rows={3} value={form.description} onChange={(e) => update({ description: e.target.value })} placeholder="Por que vale a pena, para quem serve." />
+        <div>
+          <Label>Descrição</Label>
+          <Textarea rows={3} value={form.description} onChange={(e) => update({ description: e.target.value })} placeholder="Por que vale a pena, para quem serve." />
+        </div>
       </div>
 
       <div>

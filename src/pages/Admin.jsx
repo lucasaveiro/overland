@@ -3,6 +3,7 @@ import { Pencil, Plus, Trash2, Image as ImageIcon, Save, X, KeyRound, CalendarCl
 import { NumericFormat } from "react-number-format";
 import { uploadImage, deleteUploadedImage, isUploadedImage } from "../lib/imageUpload.js";
 import { LEVEL_TITLES } from "../lib/levels.js";
+import CategoriesSection from "./AdminCategories.jsx";
 import ProductsSection from "./AdminProducts.jsx";
 import BannersSection from "./AdminBanners.jsx";
 
@@ -72,6 +73,8 @@ export default function AdminPage(){
   const [newTripId, setNewTripId] = useState(null);
   // Fotos enviadas desde que o diálogo abriu, para saber o que descartar.
   const [sessionUploads, setSessionUploads] = useState([]);
+  // Sobe quando o admin mexe nas categorias, para o form de produto recarregar.
+  const [categoriesVersion, setCategoriesVersion] = useState(0);
 
   // Cancelar: apaga tudo que subiu neste diálogo e não chegou a ser salvo.
   const discardDialog = (close) => {
@@ -144,7 +147,9 @@ export default function AdminPage(){
           }}/>
       </Dialog>}
 
-      <ProductsSection />
+      <CategoriesSection onChange={() => setCategoriesVersion((v) => v + 1)} />
+
+      <ProductsSection categoriesVersion={categoriesVersion} />
 
       <BannersSection />
 

@@ -11,6 +11,10 @@ const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession:
 
 const BUCKET = 'product-images'
 
+// products.category / products.subcategory sao colunas legadas: ficaram no banco
+// com o valor de antes da migracao, mas ninguem mais le nem escreve nelas.
+// Quem manda e product_categories.
+
 // ===== Utils =====
 const json = (status, data, event) => {
   const origin = event?.headers?.origin || ''
@@ -73,6 +77,45 @@ async function purgeProductImages(id) {
   return null
 }
 
+
+// As categorias de um produto vivem em product_categories. Um produto pode
+// estar em varias, cada uma opcionalmente com uma subcategoria.
+const SELECT_COM_CATEGORIAS =
+  '*, product_categories(category_id, subcategory_id, categories(id, name, slug, color, icon), subcategories(id, name, slug))'
+
+function achatar(p) {
+  const { product_categories: vinculos, ...resto } = p || {}
+  return {
+    ...resto,
+    categories: (vinculos || []).map((v) => ({
+      categoryId: v.category_id,
+      categoryName: v.categories?.name ?? null,
+      categorySlug: v.categories?.slug ?? null,
+      categoryColor: v.categories?.color ?? null,
+      categoryIcon: v.categories?.icon ?? null,
+      subcategoryId: v.subcategory_id,
+      subcategoryName: v.subcategories?.name ?? null,
+      subcategorySlug: v.subcategories?.slug ?? null,
+    })),
+  }
+}
+
+// Troca o conjunto inteiro de vinculos. Chamado so quando o cliente manda
+// `assignments`, para um PUT parcial (ex.: pausar) nao apagar as categorias.
+async function sincronizarCategorias(productId, assignments) {
+  await supabase.from('product_categories').delete().eq('product_id', productId)
+  const linhas = (assignments || [])
+    .filter((a) => a && a.categoryId)
+    .map((a) => ({
+      product_id: productId,
+      category_id: a.categoryId,
+      subcategory_id: a.subcategoryId || null,
+    }))
+  if (!linhas.length) return null
+  const { error } = await supabase.from('product_categories').insert(linhas)
+  return error ? error.message : null
+}
+
 // ===== Handler =====
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return json(200, {}, event)
@@ -83,11 +126,11 @@ export async function handler(event) {
     // Público: só os ativos. O admin usa ?all=1 para ver os pausados também.
     if (event.httpMethod === 'GET') {
       const params = event.queryStringParameters || {}
-      let q = supabase.from('products').select('*')
+      let q = supabase.from('products').select(SELECT_COM_CATEGORIAS)
       if (!params.all) q = q.eq('active', true)
       const { data, error } = await q.order('created_at', { ascending: false })
       if (error) return json(500, { error: error.message }, event)
-      return json(200, data, event)
+      return json(200, (data || []).map(achatar), event)
     }
 
     if (!(await requireAdmin(event))) return json(401, { error: 'Unauthorized' }, event)
@@ -102,8 +145,6 @@ export async function handler(event) {
         id: body.id,
         name: body.name,
         description: body.description || null,
-        category: body.category || null,
-        subcategory: body.subcategory || null,
         price: body.price ?? null,
         image_url: body.imageUrl ?? body.image_url ?? null,
         affiliate_url: affiliateUrl,
@@ -111,7 +152,12 @@ export async function handler(event) {
       }
       const { data, error } = await supabase.from('products').insert(payload).select().single()
       if (error) return json(500, { error: error.message }, event)
-      return json(200, data, event)
+
+      const falha = await sincronizarCategorias(data.id, body.assignments)
+      if (falha) return json(500, { error: `Produto criado, mas falhou ao vincular categorias: ${falha}` }, event)
+
+      const { data: completo } = await supabase.from('products').select(SELECT_COM_CATEGORIAS).eq('id', data.id).single()
+      return json(200, achatar(completo ?? data), event)
     }
 
     if (event.httpMethod === 'PUT') {
@@ -128,8 +174,6 @@ export async function handler(event) {
       const patch = {
         name: body.name,
         description: body.description,
-        category: body.category,
-        subcategory: body.subcategory,
         price: body.price,
         image_url: body.imageUrl ?? body.image_url,
         affiliate_url: affiliateUrl,
@@ -137,7 +181,14 @@ export async function handler(event) {
       }
       const { data, error } = await supabase.from('products').update(patch).eq('id', body.id).select().single()
       if (error) return json(500, { error: error.message }, event)
-      return json(200, data, event)
+
+      if (body.assignments !== undefined) {
+        const falha = await sincronizarCategorias(body.id, body.assignments)
+        if (falha) return json(500, { error: `Produto salvo, mas falhou ao vincular categorias: ${falha}` }, event)
+      }
+
+      const { data: completo } = await supabase.from('products').select(SELECT_COM_CATEGORIAS).eq('id', body.id).single()
+      return json(200, achatar(completo ?? data), event)
     }
 
     if (event.httpMethod === 'DELETE') {

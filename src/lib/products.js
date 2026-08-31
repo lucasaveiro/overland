@@ -1,61 +1,39 @@
 /**
- * Taxonomia da loja. `value` e as subcategorias são gravados em
- * products.category / products.subcategory, então mudar uma string exige
- * atualizar as linhas já salvas no banco — não é só texto de tela.
- *
- * Dados puros de propósito: o ícone é uma chave que a página resolve para o
- * componente, para este módulo não depender de React.
+ * A taxonomia agora vive no banco (tabelas categories / subcategories) e é
+ * gerenciada pelo admin. Aqui ficam só os mapas de apresentação: a categoria
+ * guarda uma chave de ícone e uma de cor, e quem resolve para componente ou
+ * classe é o front.
  */
-export const PRODUCT_TAXONOMY = [
-  {
-    value: "Offroad",
-    icon: "truck",
-    blurb: "O que tira o carro do atoleiro e o traz inteiro de volta.",
-    badgeClass: "bg-[var(--moss)] text-white",
-    subcategories: [
-      "Recuperação e resgate",
-      "Pneus e rodas",
-      "Proteção e para-choques",
-      "Iluminação auxiliar",
-      "Suspensão e chassi",
-      "Ferramentas e manutenção",
-    ],
-  },
-  {
-    value: "Camping",
-    icon: "tent",
-    blurb: "Para a parada valer tanto quanto o caminho.",
-    badgeClass: "bg-[var(--brown)] text-white",
-    subcategories: [
-      "Barracas e abrigos",
-      "Dormir e descanso",
-      "Cozinha de campo",
-      "Energia e iluminação",
-      "Mesas e cadeiras",
-      "Higiene e conforto",
-    ],
-  },
-  {
-    value: "Viagem",
-    icon: "compass",
-    blurb: "Bagagem, energia e navegação para a estrada longa.",
-    badgeClass: "bg-neutral-700 text-white",
-    subcategories: [
-      "Bagageiros e racks",
-      "Malas e organização",
-      "Navegação e comunicação",
-      "Refrigeração e água",
-      "Eletrônicos de bordo",
-      "Segurança e primeiros socorros",
-    ],
-  },
+
+export const CATEGORY_ICONS = [
+  { value: "truck", label: "Caminhonete" },
+  { value: "tent", label: "Barraca" },
+  { value: "compass", label: "Bússola" },
+  { value: "mountain", label: "Montanha" },
+  { value: "wrench", label: "Chave" },
+  { value: "zap", label: "Energia" },
+  { value: "package", label: "Caixa" },
+  { value: "shopping-bag", label: "Sacola" },
 ];
 
-export const CATEGORY_VALUES = PRODUCT_TAXONOMY.map((c) => c.value);
+export const CATEGORY_COLORS = [
+  { value: "moss", label: "Verde musgo", badgeClass: "bg-[var(--moss)] text-white" },
+  { value: "brown", label: "Marrom", badgeClass: "bg-[var(--brown)] text-white" },
+  { value: "neutral", label: "Grafite", badgeClass: "bg-neutral-700 text-white" },
+  { value: "blue", label: "Azul", badgeClass: "bg-blue-600 text-white" },
+  { value: "amber", label: "Âmbar", badgeClass: "bg-amber-500 text-black" },
+  { value: "black", label: "Preto", badgeClass: "bg-black text-white" },
+];
 
-export const findCategory = (value) => PRODUCT_TAXONOMY.find((c) => c.value === value) ?? null;
+export const colorClassFor = (key) =>
+  CATEGORY_COLORS.find((c) => c.value === key)?.badgeClass ?? "bg-neutral-500 text-white";
 
-export const subcategoriesOf = (value) => findCategory(value)?.subcategories ?? [];
-
-export const categoryBadgeFor = (value) =>
-  findCategory(value)?.badgeClass ?? "bg-neutral-500 text-white";
+/** Mesma regra do servidor, para prever o slug enquanto o admin digita. */
+export const slugify = (s) =>
+  String(s || "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
