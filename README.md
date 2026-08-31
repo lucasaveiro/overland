@@ -90,33 +90,17 @@ Para o site funcionar com as Functions no deploy, você precisa configurar as va
 Banco de dados (Supabase)
 Crie um projeto em https://app.supabase.com
 
-No SQL Editor, execute:
+No SQL Editor, cole e execute o conteúdo de [`db/schema.sql`](db/schema.sql).
+Ele cria todas as tabelas (passeios, inscrições, produtos, categorias,
+subcategorias, vínculos e banners), liga a RLS e cria os índices.
 
-sql
-Copy
-Edit
-create table if not exists public.trips (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  date_time timestamptz not null,
-  location text,
-  description text,
-  complete_description text,
-  price_car numeric(10,2),
-  price_extra numeric(10,2),
-  images jsonb default '[]'::jsonb,
-  created_at timestamptz default now()
-);
+As Functions acessam o banco com a Service Role Key, que ignora RLS. A RLS
+fica ligada para que a anon key, exposta no navegador, não leia nem escreva
+nada diretamente.
 
-create table if not exists public.registrations (
-  id uuid primary key default gen_random_uuid(),
-  trip_id uuid references public.trips(id) on delete cascade,
-  name text not null,
-  whatsapp text not null,
-  email text not null,
-  created_at timestamptz default now()
-);
-RLS pode permanecer ligado (padrão). As Functions usam a Service Role Key no server.
+Faltam ainda os três buckets de imagem — `trip-images`, `product-images` e
+`banner-images` — que são criados pela API de Storage, não por SQL. O rodapé
+de `db/schema.sql` descreve a configuração de cada um.
 
 Variáveis de ambiente (Netlify)
 No painel do site: Site settings → Environment variables.
