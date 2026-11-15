@@ -15,10 +15,11 @@ export const NAV = [
       { label: "Todas as expedições", to: "/expedicoes" },
       { label: "Próximas saídas", to: "/expedicoes#proximas" },
       { label: "Diário de expedições", to: "/expedicoes#realizadas" },
+      { label: "Prepare seu 4x4", to: "/prepare-seu-4x4" },
     ],
   },
   {
-    label: "Experiências",
+    label: "Passeios",
     to: "/experiencias/signature-day",
     items: [
       { label: "Signature Day", to: "/experiencias/signature-day" },

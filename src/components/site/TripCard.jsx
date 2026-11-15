@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { formatBRL } from "../../lib/format.js";
 import { formatTripDate, isCancelled, isUpcoming, tripDuration, tripKindLabel } from "../../lib/trips.js";
 import { track } from "../../lib/analytics.js";
+import { levelShort } from "../../lib/levels.js";
 import { Arrow, Topo, cn } from "./ui.jsx";
 
 /**
@@ -53,7 +54,7 @@ export default function TripCard({ trip, size = "md", className = "" }) {
         <dl className="mt-5 flex flex-wrap gap-x-8 gap-y-3 border-t border-white/20 pt-4">
           <Meta label="Data" value={formatTripDate(trip.date_time)} />
           {duration && <Meta label="Duração" value={duration} />}
-          {trip.difficulty && <Meta label="Nível" value={trip.difficulty} />}
+          {trip.difficulty && <Meta label="Nível" value={levelShort(trip.difficulty)} />}
           {trip.price_car != null && <Meta label="Por veículo · 2 pessoas" value={formatBRL(trip.price_car)} />}
         </dl>
 

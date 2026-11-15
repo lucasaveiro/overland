@@ -9,6 +9,7 @@ import { formatBRL } from "../lib/format.js";
 import { API_REGISTER, API_TRIPS, formatTripDate, isCancelled, isUpcoming, tripDuration, tripKindLabel } from "../lib/trips.js";
 import { track } from "../lib/analytics.js";
 import { useSeo } from "../lib/seo.js";
+import { levelShort } from "../lib/levels.js";
 
 const lines = (v) => (Array.isArray(v) ? v.filter(Boolean) : []);
 
@@ -73,7 +74,7 @@ export default function TripPage() {
     ["Região de encontro", d.meeting || trip.location],
     ["Distância estimada", d.distance],
     ["Tipo de terreno", d.terrain],
-    ["Nível de dificuldade", trip.difficulty],
+    ["Nível do roteiro", levelShort(trip.difficulty)],
     ["Experiência prévia", d.experience],
     ["Veículos previstos", d.vehicles],
     ["Hospedagem", d.lodging],
@@ -115,7 +116,7 @@ export default function TripPage() {
             {trip.location && <HeroFact label="Região" value={trip.location} />}
             <HeroFact label="Data" value={formatTripDate(trip.date_time)} />
             {duration && <HeroFact label="Duração" value={duration} />}
-            {trip.difficulty && <HeroFact label="Nível" value={trip.difficulty} />}
+            {trip.difficulty && <HeroFact label="Nível" value={levelShort(trip.difficulty)} />}
           </dl>
           <div className="mt-8">
             <a href={ctaHref} className="btn-brand" onClick={() => upcoming && track("begin_reservation", { expedition_id: trip.id, origin: "hero" })}>
@@ -221,7 +222,7 @@ export default function TripPage() {
             <h2 className="h2 mt-5 lg:text-[56px]">O seu 4x4 neste roteiro</h2>
           </Reveal>
           <div className="mt-10 lg:mt-14">
-            <VehicleReadiness levelTitle={trip.difficulty} />
+            <VehicleReadiness levelTitle={trip.difficulty} consultHref={upcoming ? "#reserva" : undefined} />
           </div>
         </div>
       </section>

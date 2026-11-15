@@ -1,12 +1,13 @@
 import React, { useMemo } from "react";
 import { tripDuration, tripKindLabel, tripMonth, tripRegion } from "../../lib/trips.js";
+import { levelShort } from "../../lib/levels.js";
 import { cn } from "./ui.jsx";
 
 const FILTERS = [
   { key: "tipo", label: "Experiência", get: tripKindLabel },
   { key: "regiao", label: "Destino", get: tripRegion },
   { key: "duracao", label: "Duração", get: tripDuration },
-  { key: "nivel", label: "Nível", get: (t) => t.difficulty || null },
+  { key: "nivel", label: "Nível", get: (t) => levelShort(t.difficulty) },
   { key: "mes", label: "Período", get: tripMonth },
 ];
 

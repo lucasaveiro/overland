@@ -88,9 +88,9 @@ export default function SignatureDayPage() {
       <EditorialSection
         label="04 / Seu veículo"
         title="Venha com o seu 4x4."
-        intro="Cada data indica o nível de veículo necessário. Consulte o seu modelo para uma primeira orientação."
+        intro="Cada data indica o nível do roteiro. Ele diz o que o terreno pede do veículo, não quais modelos são aceitos."
       >
-        <VehicleReadiness />
+        <VehicleReadiness consultHref="#consulta" />
       </EditorialSection>
 
       <EditorialSection
