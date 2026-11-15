@@ -33,7 +33,7 @@ export default function Home() {
       <Manifesto image={photo(0, nivel1)} />
       <Expeditions upcoming={upcoming} past={past} loading={loading} />
       <Standard image={photo(1, nivel3)} />
-      <SignatureDay image={photo(2, nivel2)} />
+      <OffDay image={photo(2, nivel2)} />
       <Films poster={photo(3, null)} />
       <Ecosystem />
     </>
@@ -230,7 +230,7 @@ function Standard({ image }) {
   );
 }
 
-/* ───────────────────────── 05 · Signature Day ───────────────────────── */
+/* ───────────────────────── 05 · Off Day ───────────────────────── */
 const DAY_FACTS = [
   ["Formato", "Experiência de um dia"],
   ["Veículo", "O seu próprio 4x4"],
@@ -238,15 +238,15 @@ const DAY_FACTS = [
   ["Datas", "Publicadas em Próximas saídas", "/expedicoes#proximas"],
 ];
 
-function SignatureDay({ image }) {
+function OffDay({ image }) {
   return (
-    <section id="signature-day" className="section bg-white">
+    <section id="off-day" className="section bg-white">
       <div className="site-container">
         <div className="grid gap-10 lg:grid-cols-12 lg:gap-8">
           <Reveal className="lg:col-span-8">
             <p className="eyebrow inline-flex items-center gap-3 border border-carbon/20 px-3 py-2 text-carbon">
               <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-              Signature Day / One Day Experience
+              Off Day / One Day Experience
             </p>
             <h2 className="h2 mt-7">
               Um dia fora da rotina. <span className="text-carbon/45">Uma experiência inteira para lembrar.</span>
@@ -276,8 +276,8 @@ function SignatureDay({ image }) {
         </dl>
 
         <div className="mt-10">
-          <Link to="/experiencias/signature-day" className="btn-dark">
-            Conhecer Signature Day <Arrow />
+          <Link to="/passeios/off-day" className="btn-dark">
+            Conhecer Off Day <Arrow />
           </Link>
         </div>
       </div>

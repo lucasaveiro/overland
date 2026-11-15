@@ -5,7 +5,7 @@
 export const EVENTS = [
   "view_expedition", "select_expedition", "begin_reservation", "submit_expedition_lead",
   "view_films", "request_personal_film", "submit_brand_lead", "join_club_waitlist",
-  "submit_signature_day_lead",
+  "submit_off_day_lead",
 ];
 
 export function track(name, params = {}) {

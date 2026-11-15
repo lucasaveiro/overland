@@ -55,7 +55,7 @@ export default function DossierFields({ value, onChange }) {
               <span className="mb-1 block font-medium">Tipo de experiência</span>
               <select className={inputClass} value={details.kind || ""} onChange={(e) => set({ kind: e.target.value })}>
                 <option value="">Não definido</option>
-                <option value="day">Signature Day (um dia)</option>
+                <option value="day">Off Day (um dia)</option>
                 <option value="expedition">Signature Expedition (vários dias)</option>
               </select>
             </label>

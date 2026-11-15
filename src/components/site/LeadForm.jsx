@@ -12,7 +12,7 @@ export const FIELD = {
 };
 
 /**
- * Formulário único de solicitações (marcas, Club, Films, Signature Day).
+ * Formulário único de solicitações (marcas, Club, Films, Off Day).
  * `fields` descreve os campos; nome, e-mail, WhatsApp e empresa viram colunas
  * próprias e o restante segue em `details`, com o rótulo como chave, para a
  * equipe ler no admin sem precisar de dicionário.
