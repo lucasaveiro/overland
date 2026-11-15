@@ -119,6 +119,18 @@ export default function TripPage() {
             </a>
           </div>
         </div>
+        {/* Crédito de capa de banco livre (licenças CC exigem autoria). Vale só
+            enquanto a capa for a imagem do Wikimedia: trocou a foto, some. */}
+        {d.cover_credit?.url && cover?.includes("wikimedia.org") && (
+          <a
+            href={d.cover_credit.url}
+            target="_blank"
+            rel="noreferrer"
+            className="absolute bottom-2 right-5 max-w-[70%] truncate text-[11px] text-white/55 hover:text-white lg:right-12"
+          >
+            Imagem da região: {d.cover_credit.text}
+          </a>
+        )}
       </header>
 
       {/* ── Índice do dossiê + CTA contextual (telas maiores) ── */}
