@@ -21,6 +21,8 @@ create table if not exists public.trips (
   price_car            numeric(10,2),
   price_extra          numeric(10,2),
   images               jsonb default '[]'::jsonb,
+  -- false = rascunho: some da listagem publica e /passeio/<id> responde 404.
+  published            boolean not null default true,
   created_at           timestamptz default now()
 );
 

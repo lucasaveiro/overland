@@ -75,6 +75,9 @@ export async function handler(event) {
     if (event.httpMethod === 'GET') {
       const params = event.queryStringParameters || {}
       const id = params.id
+      // Passeio oculto (published = false) só existe para quem tem sessão de
+      // admin: some da listagem pública e a página direta responde 404.
+      const admin = await requireAdmin(event)
       if (id) {
         const { data, error } = await supabase
           .from('trips')
@@ -82,11 +85,16 @@ export async function handler(event) {
           .eq('id', id)
           .single()
         if (error) return json(404, { error: error.message }, event)
+        if (!data.published && !admin) return json(404, { error: 'Not found' }, event)
         return json(200, data, event)
       }
       const all = params.all === '1' || params.all === 'true'
       const upcoming = params.upcoming === '1' || params.upcoming === 'true'
+      // ?admin=1 pede a lista completa, com os ocultos, e exige sessão.
+      const wantsHidden = params.admin === '1'
+      if (wantsHidden && !admin) return json(401, { error: 'Unauthorized' }, event)
       let q = supabase.from('trips').select('*')
+      if (!wantsHidden) q = q.eq('published', true)
       if (upcoming && !all) q = q.gte('date_time', new Date().toISOString())
       const { data, error } = await q.order('date_time', { ascending: true })
       if (error) return json(500, { error: error.message }, event)
@@ -110,6 +118,7 @@ export async function handler(event) {
         difficulty: body.difficulty || null,
         price_car: body.priceCar ?? body.price_car ?? null,
         price_extra: body.priceExtra ?? body.price_extra ?? null,
+        published: body.published ?? true,
       }
       if (!payload.name || !payload.date_time) return json(400, { error: 'name and date_time are required' }, event)
       const { data, error } = await supabase.from('trips').insert(payload).select().single()
@@ -130,6 +139,7 @@ export async function handler(event) {
         difficulty: body.difficulty,
         price_car: body.priceCar ?? body.price_car,
         price_extra: body.priceExtra ?? body.price_extra,
+        published: body.published,
       }
       const { data, error } = await supabase.from('trips').update(patch).eq('id', body.id).select().single()
       if (error) return json(500, { error: error.message }, event)

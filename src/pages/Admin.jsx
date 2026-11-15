@@ -101,8 +101,15 @@ export default function AdminPage(){
   // Carrega passeios quando logado
   useEffect(()=>{
     if(!auth.ok) return;
-    fetch(`${API.trips}?all=1`, { credentials:"include" }).then(r=>r.json()).then(d=>Array.isArray(d)&&setTrips(d)).catch(()=>setTrips([]));
+    fetch(`${API.trips}?all=1&admin=1`, { credentials:"include" }).then(r=>r.json()).then(d=>Array.isArray(d)&&setTrips(d)).catch(()=>setTrips([]));
   },[auth.ok]);
+
+  // PUT parcial: só o campo published, sem tocar em fotos ou no resto.
+  const togglePublished = async (trip)=>{
+    const res = await fetch(API.trips, { method:"PUT", credentials:"include", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ id: trip.id, published: trip.published === false }) });
+    if(res.ok){ const data = await res.json(); setTrips(prev=>prev.map(t=>t.id===data.id?data:t)); }
+    else alert("Falha ao alterar a visibilidade.");
+  };
 
   if(auth.loading) return <div className="py-10 text-center text-neutral-600">Carregando…</div>;
   if(!auth.ok) return <LoginForm onSuccess={()=>setAuth({loading:false, ok:true})} />;
@@ -121,7 +128,7 @@ export default function AdminPage(){
       </div>
 
       {/* tabela futuros */}
-      <AdminTable title="Futuros" trips={fut} showParticipants onEdit={setEditing} onDelete={async (id)=>{
+      <AdminTable title="Futuros" trips={fut} showParticipants onTogglePublished={togglePublished} onEdit={setEditing} onDelete={async (id)=>{
         if(!confirm("Remover este passeio?")) return;
         const res = await fetch(`${API.trips}?id=${id}`, { method:"DELETE", credentials:"include" });
         if(res.ok) setTrips(prev=>prev.filter(t=>t.id!==id)); else alert("Falha ao remover.");
@@ -129,7 +136,7 @@ export default function AdminPage(){
 
       {/* tabela passados */}
       <div className="mt-8" />
-      <AdminTable title="Passados" trips={past} onEdit={setEditing} onDelete={async (id)=>{
+      <AdminTable title="Passados" trips={past} onTogglePublished={togglePublished} onEdit={setEditing} onDelete={async (id)=>{
         if(!confirm("Remover este passeio?")) return;
         const res = await fetch(`${API.trips}?id=${id}`, { method:"DELETE", credentials:"include" });
         if(res.ok) setTrips(prev=>prev.filter(t=>t.id!==id)); else alert("Falha ao remover.");
@@ -138,7 +145,7 @@ export default function AdminPage(){
       {/* dialogs */}
       {newTripId && <Dialog onClose={()=>discardDialog(()=>setNewTripId(null))}>
         <h3 className="text-lg font-semibold mb-2">Novo passeio</h3>
-      <TripForm initial={{ id: newTripId, name:"", dateTime:new Date().toISOString(), location:"", difficulty:"", description:"", completeDescription:"", images:[], priceCar:null, priceExtra:null }}
+      <TripForm initial={{ id: newTripId, name:"", dateTime:new Date().toISOString(), location:"", difficulty:"", description:"", completeDescription:"", images:[], priceCar:null, priceExtra:null, published:true }}
           onUploaded={(url)=>setSessionUploads(prev=>[...prev, url])}
           onCancel={()=>discardDialog(()=>setNewTripId(null))}
           onSave={async (created)=>{
@@ -156,7 +163,7 @@ export default function AdminPage(){
       {editing && <Dialog onClose={()=>discardDialog(()=>setEditing(null))}>
         <h3 className="text-lg font-semibold mb-2">Editar passeio</h3>
 
-        <TripForm initial={{ id:editing.id, name:editing.name, dateTime:editing.date_time, location:editing.location, difficulty:editing.difficulty, description:editing.description, completeDescription:editing.complete_description, images:editing.images||[], priceCar:editing.price_car, priceExtra:editing.price_extra }}
+        <TripForm initial={{ id:editing.id, name:editing.name, dateTime:editing.date_time, location:editing.location, difficulty:editing.difficulty, description:editing.description, completeDescription:editing.complete_description, images:editing.images||[], priceCar:editing.price_car, priceExtra:editing.price_extra, published:editing.published !== false }}
           onUploaded={(url)=>setSessionUploads(prev=>[...prev, url])}
           onCancel={()=>discardDialog(()=>setEditing(null))}
           onSave={async (patch)=>{
@@ -185,7 +192,7 @@ function LoginForm({ onSuccess }){
   );
 }
 
-function AdminTable({ title, trips, onEdit, onDelete, showParticipants=false }){
+function AdminTable({ title, trips, onEdit, onDelete, onTogglePublished, showParticipants=false }){
   const [open, setOpen] = useState({});
   const [participants, setParticipants] = useState({});
   const toggle = async(id)=>{
@@ -212,7 +219,7 @@ function AdminTable({ title, trips, onEdit, onDelete, showParticipants=false }){
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="text-left border-b">
-                <th className="py-2 pr-3">Passeio</th><th className="py-2 pr-3">Data</th><th className="py-2 pr-3">Local</th><th className="py-2 pr-3">Fotos</th><th className="py-2 text-right">Ações</th>
+                <th className="py-2 pr-3">Passeio</th><th className="py-2 pr-3">Data</th><th className="py-2 pr-3">Local</th><th className="py-2 pr-3">Fotos</th><th className="py-2 pr-3">Status</th><th className="py-2 text-right">Ações</th>
               </tr></thead>
               <tbody>
                 {trips.slice().sort((a,b)=>new Date(a.date_time)-new Date(b.date_time)).map(t=>(
@@ -222,6 +229,11 @@ function AdminTable({ title, trips, onEdit, onDelete, showParticipants=false }){
                       <td className="py-2 pr-3">{new Intl.DateTimeFormat("pt-BR",{dateStyle:"medium", timeStyle:"short"}).format(new Date(t.date_time))}</td>
                       <td className="py-2 pr-3">{t.location || <span className="text-neutral-500">—</span>}</td>
                       <td className="py-2 pr-3">{(t.images||[]).length}</td>
+                      <td className="py-2 pr-3">
+                        <button type="button" onClick={()=>onTogglePublished?.(t)} className={`rounded px-2 py-0.5 text-xs ${t.published!==false ? "bg-green-100 text-green-800" : "bg-neutral-200 text-neutral-600"}`}>
+                          {t.published!==false ? "Publicado" : "Oculto"}
+                        </button>
+                      </td>
                       <td className="py-2 text-right">
                         {showParticipants && <Button variant="secondary" className="mr-2" onClick={()=>toggle(t.id)}>{open[t.id]?"Esconder":"Participantes"}</Button>}
                         <Button variant="secondary" className="mr-2" onClick={()=>onEdit(t)}><Pencil className="w-4 h-4 mr-1" /> Editar</Button>
@@ -230,7 +242,7 @@ function AdminTable({ title, trips, onEdit, onDelete, showParticipants=false }){
                     </tr>
                     {showParticipants && open[t.id] && (
                       <tr className="border-b last:border-0 bg-neutral-50">
-                        <td colSpan={5} className="p-3">
+                        <td colSpan={6} className="p-3">
                           {participants[t.id] ? (
                             participants[t.id].length>0 ? (
                               <ul className="space-y-1">
@@ -403,6 +415,11 @@ function TripForm({ initial, onSave, onCancel, onUploaded }){
           ))}
         </div>}
       </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={form.published !== false} onChange={e=>update({published:e.target.checked})} />
+        Publicado no site
+        <span className="text-xs text-neutral-500">— desmarcado, o passeio fica só aqui no admin</span>
+      </label>
       <div className="flex justify-end gap-2 mt-2">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>
         <Button type="submit" disabled={uploading}><Save className="w-4 h-4 mr-1" /> Salvar</Button>
