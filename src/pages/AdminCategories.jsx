@@ -164,14 +164,14 @@ function CategoryForm({ initial, subcategories, onSubcategoriesChange, onSave, o
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <Label>Nome</Label>
-          <Input value={form.name} onChange={(e) => mudarNome(e.target.value)} placeholder="Ex.: Viatura Offgrid" />
+          <Input value={form.name} onChange={(e) => mudarNome(e.target.value)} placeholder="Ex.: Viatura OffXpedition" />
         </div>
         <div>
           <Label>Endereço na loja</Label>
           <Input
             value={form.slug}
             onChange={(e) => { slugManual.current = true; update({ slug: e.target.value }); }}
-            placeholder="viatura-offgrid"
+            placeholder="viatura-offxpedition"
           />
           <p className="text-xs text-neutral-500 mt-1 break-all">/produtos?c={slugify(form.slug || form.name) || "…"}</p>
         </div>

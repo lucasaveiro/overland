@@ -35,7 +35,7 @@ export default function ProdutosPage() {
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   // Filtros na URL por slug: link de categoria é compartilhável e o banner
-  // pode apontar direto para /produtos?c=viatura-offgrid.
+  // pode apontar direto para /produtos?c=viatura-offxpedition.
   const [params, setParams] = useSearchParams();
 
   const catSlug = params.get("c") || "";
