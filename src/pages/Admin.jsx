@@ -6,6 +6,8 @@ import { LEVEL_TITLES } from "../lib/levels.js";
 import CategoriesSection from "./AdminCategories.jsx";
 import ProductsSection from "./AdminProducts.jsx";
 import BannersSection from "./AdminBanners.jsx";
+import LeadsSection from "./AdminLeads.jsx";
+import DossierFields, { cleanDetails } from "./AdminTripDossier.jsx";
 
 const API = {
   trips: "/.netlify/functions/trips",
@@ -145,7 +147,7 @@ export default function AdminPage(){
       {/* dialogs */}
       {newTripId && <Dialog onClose={()=>discardDialog(()=>setNewTripId(null))}>
         <h3 className="text-lg font-semibold mb-2">Novo passeio</h3>
-      <TripForm initial={{ id: newTripId, name:"", dateTime:new Date().toISOString(), location:"", difficulty:"", description:"", completeDescription:"", images:[], priceCar:null, priceExtra:null, published:true, signature:false }}
+      <TripForm initial={{ id: newTripId, name:"", dateTime:new Date().toISOString(), location:"", difficulty:"", description:"", completeDescription:"", images:[], priceCar:null, priceExtra:null, published:true, signature:false, details:{} }}
           onUploaded={(url)=>setSessionUploads(prev=>[...prev, url])}
           onCancel={()=>discardDialog(()=>setNewTripId(null))}
           onSave={async (created)=>{
@@ -153,6 +155,8 @@ export default function AdminPage(){
             if(res.ok){ const data = await res.json(); setTrips(prev=>[data,...prev]); reconcileImages([], data.images); setNewTripId(null); } else alert("Falha ao criar.");
           }}/>
       </Dialog>}
+
+      <LeadsSection />
 
       <CategoriesSection onChange={() => setCategoriesVersion((v) => v + 1)} />
 
@@ -163,7 +167,7 @@ export default function AdminPage(){
       {editing && <Dialog onClose={()=>discardDialog(()=>setEditing(null))}>
         <h3 className="text-lg font-semibold mb-2">Editar passeio</h3>
 
-        <TripForm initial={{ id:editing.id, name:editing.name, dateTime:editing.date_time, location:editing.location, difficulty:editing.difficulty, description:editing.description, completeDescription:editing.complete_description, images:editing.images||[], priceCar:editing.price_car, priceExtra:editing.price_extra, published:editing.published !== false, signature:!!editing.signature }}
+        <TripForm initial={{ id:editing.id, name:editing.name, dateTime:editing.date_time, location:editing.location, difficulty:editing.difficulty, description:editing.description, completeDescription:editing.complete_description, images:editing.images||[], priceCar:editing.price_car, priceExtra:editing.price_extra, published:editing.published !== false, signature:!!editing.signature, details:editing.details||{} }}
           onUploaded={(url)=>setSessionUploads(prev=>[...prev, url])}
           onCancel={()=>discardDialog(()=>setEditing(null))}
           onSave={async (patch)=>{
@@ -321,8 +325,14 @@ function TripForm({ initial, onSave, onCancel, onUploaded }){
     e.preventDefault();
     if(!form.name) return alert("Defina um nome.");
     if(!form.dateTime) return alert("Defina data e hora.");
+    const { details: rawDetails, ...rest } = form;
+    const details = cleanDetails(rawDetails);
+    // O dossiê só vai no envio quando existe (ou existia) conteúdo: assim o
+    // cadastro segue funcionando em banco sem a coluna details.
+    const hadDetails = Object.keys(initial.details || {}).length > 0;
     onSave({
-      ...form,
+      ...rest,
+      ...(Object.keys(details).length > 0 || hadDetails ? { details } : {}),
       priceCar: form.priceCar ?? null,
       priceExtra: form.priceExtra ?? null,
     });
@@ -415,6 +425,7 @@ function TripForm({ initial, onSave, onCancel, onUploaded }){
           ))}
         </div>}
       </div>
+      <DossierFields key={form.id} value={form.details} onChange={(details)=>update({details})} />
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={!!form.signature} onChange={e=>update({signature:e.target.checked})} />
         Expedição Signature

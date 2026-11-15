@@ -1,3 +1,104 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  /* Variáveis usadas pelas telas de admin e loja, apontadas para a nova paleta. */
+  --moss: #1d8f06;
+  --moss-600: #156b05;
+  --brown: #202522;
+  --sand: #f3f1ea;
+  --bg: #ffffff;
+  --fg: #111412;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* Altura do cabeçalho fixo: âncoras não ficam escondidas atrás dele. */
+    scroll-padding-top: 88px;
+  }
+  body {
+    @apply bg-white font-sans text-carbon antialiased;
+  }
+  ::selection {
+    background: #0cfc0d;
+    color: #111412;
+  }
+  :focus-visible {
+    outline: 2px solid #1d8f06;
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  .site-container {
+    @apply mx-auto w-full max-w-site px-5 sm:px-8 lg:px-12;
+  }
+  .display {
+    @apply font-display font-bold uppercase leading-[0.92] tracking-[-0.005em];
+    text-wrap: balance;
+  }
+  .h1-hero {
+    @apply display text-[44px] sm:text-[64px] lg:text-[88px] xl:text-[104px];
+  }
+  .h2 {
+    @apply display text-[34px] sm:text-[48px] lg:text-[64px];
+  }
+  .h3 {
+    @apply font-display text-[26px] font-semibold uppercase leading-none lg:text-[32px];
+  }
+  .eyebrow {
+    @apply font-mono text-[12px] font-medium uppercase tracking-[0.18em];
+  }
+  .meta {
+    @apply font-mono text-[12px] uppercase tracking-[0.12em];
+  }
+  .lead {
+    @apply text-[17px] leading-relaxed lg:text-[18px];
+    text-wrap: pretty;
+  }
+  .btn {
+    @apply inline-flex min-h-[48px] items-center justify-center gap-3 rounded-[3px] px-6 font-display text-[17px] font-semibold uppercase tracking-[0.08em] transition-colors duration-200;
+  }
+  .btn-brand {
+    @apply btn bg-brand text-carbon hover:bg-white;
+  }
+  .btn-dark {
+    @apply btn bg-carbon text-white hover:bg-charcoal;
+  }
+  .btn-outline-light {
+    @apply btn border border-white/45 text-white hover:border-white hover:bg-white hover:text-carbon;
+  }
+  .btn-outline-dark {
+    @apply btn border border-carbon/25 text-carbon hover:border-carbon hover:bg-carbon hover:text-white;
+  }
+  /* Sistema único de formulário: usado na inscrição do roteiro e nos leads. */
+  .field-label {
+    @apply meta mb-2 block text-carbon/60;
+  }
+  .field-input {
+    @apply min-h-[48px] w-full rounded-[3px] border border-carbon/25 bg-white px-4 py-3 text-[16px] text-carbon placeholder:text-carbon/35 focus:border-carbon focus:outline-none focus:ring-2 focus:ring-brand;
+  }
+  .field-input[aria-invalid="true"] {
+    @apply border-red-700;
+  }
+  .section {
+    @apply py-16 sm:py-20 lg:py-36;
+  }
+}
+
+/* Linhas topográficas: o símbolo da marca vira máscara e herda a cor do texto,
+   então serve em fundo claro ou escuro sem inverter o arquivo original. */
+.topo {
+  background-color: currentColor;
+  -webkit-mask: var(--topo-src) center / contain no-repeat;
+  mask: var(--topo-src) center / contain no-repeat;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
