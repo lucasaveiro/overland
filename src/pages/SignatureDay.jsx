@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useTrips } from "../lib/trips.js";
+import { isCancelled, useTrips } from "../lib/trips.js";
 import { useSeo } from "../lib/seo.js";
 import TripCard from "../components/site/TripCard.jsx";
 import VehicleReadiness from "../components/site/VehicleReadiness.jsx";
@@ -39,7 +39,7 @@ export default function SignatureDayPage() {
     description: "Experiências off-road premium de um dia, com o seu próprio 4x4 e sem precisar organizar cada detalhe da jornada.",
   });
   const { upcoming, loading } = useTrips();
-  const days = upcoming.filter((t) => t.details?.kind === "day");
+  const days = upcoming.filter((t) => t.details?.kind === "day" && !isCancelled(t));
 
   return (
     <>

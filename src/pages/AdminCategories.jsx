@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Pencil, Plus, Trash2, Save, Tags } from "lucide-react";
-import { Button, Card, CardContent, Input, Label, Textarea, Dialog } from "./Admin.jsx";
+import { Button, IconButton, RowActions, Card, CardContent, Input, Label, Textarea, Dialog } from "./Admin.jsx";
 import { CATEGORY_ICONS, CATEGORY_COLORS, colorClassFor, slugify } from "../lib/products.js";
 
 const API_CATEGORIES = "/.netlify/functions/categories";
@@ -98,12 +98,10 @@ export default function CategoriesSection({ onChange }) {
                         </button>
                       </td>
                       <td className="py-2 text-right whitespace-nowrap">
-                        <Button variant="secondary" className="mr-2" onClick={() => setEditing(c)}>
-                          <Pencil className="w-4 h-4 mr-1" /> Editar
-                        </Button>
-                        <Button variant="destructive" onClick={() => remove(c)}>
-                          <Trash2 className="w-4 h-4 mr-1" /> Remover
-                        </Button>
+                        <RowActions>
+                          <IconButton icon={Pencil} label="Editar" onClick={() => setEditing(c)} />
+                          <IconButton icon={Trash2} label="Remover" tone="danger" onClick={() => remove(c)} />
+                        </RowActions>
                       </td>
                     </tr>
                   ))}

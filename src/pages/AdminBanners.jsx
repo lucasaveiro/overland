@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Pencil, Plus, Trash2, Save, X, Upload, Image as ImageIcon, ExternalLink } from "lucide-react";
-import { Button, Card, CardContent, Input, Label, Dialog } from "./Admin.jsx";
+import { Button, IconButton, RowActions, Card, CardContent, Input, Label, Dialog } from "./Admin.jsx";
 import { uploadImage, deleteUploadedImage, isUploadedImage } from "../lib/imageUpload.js";
 
 const API_BANNERS = "/.netlify/functions/banners";
@@ -111,12 +111,10 @@ export default function BannersSection() {
                         </button>
                       </td>
                       <td className="py-2 text-right whitespace-nowrap">
-                        <Button variant="secondary" className="mr-2" onClick={() => setEditing(b)}>
-                          <Pencil className="w-4 h-4 mr-1" /> Editar
-                        </Button>
-                        <Button variant="destructive" onClick={() => remove(b.id)}>
-                          <Trash2 className="w-4 h-4 mr-1" /> Remover
-                        </Button>
+                        <RowActions>
+                          <IconButton icon={Pencil} label="Editar" onClick={() => setEditing(b)} />
+                          <IconButton icon={Trash2} label="Remover" tone="danger" onClick={() => remove(b.id)} />
+                        </RowActions>
                       </td>
                     </tr>
                   ))}

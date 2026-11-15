@@ -61,3 +61,26 @@ export function tripRegion(trip) {
 
 const monthFmt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" });
 export const tripMonth = (trip) => monthFmt.format(new Date(trip.date_time));
+
+/* ───── Status: publicado, oculto ou cancelado ───── */
+
+// "Oculto" é a coluna published = false. "Cancelado" fica em details.cancelled:
+// o passeio continua no site, marcado como cancelado e sem inscrição.
+export const STATUS_LABEL = { publicado: "Publicado", oculto: "Oculto", cancelado: "Cancelado" };
+
+export const isCancelled = (trip) => trip?.details?.cancelled === true;
+
+export function tripStatus(trip) {
+  if (trip.published === false) return "oculto";
+  return isCancelled(trip) ? "cancelado" : "publicado";
+}
+
+/** Corpo do PUT que leva o passeio ao status pedido. Só mexe em details quando a marca de cancelado muda. */
+export function statusPatch(trip, status) {
+  const { cancelled, ...rest } = trip.details || {};
+  const patch = { published: status !== "oculto" };
+  if ((cancelled === true) !== (status === "cancelado")) {
+    patch.details = status === "cancelado" ? { ...rest, cancelled: true } : rest;
+  }
+  return patch;
+}

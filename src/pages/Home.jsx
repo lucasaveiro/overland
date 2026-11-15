@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useTrips } from "../lib/trips.js";
+import { isCancelled, useTrips } from "../lib/trips.js";
 import { useSeo } from "../lib/seo.js";
 import TripCard from "../components/site/TripCard.jsx";
 import { Arrow, Reveal, Topo, cn } from "../components/site/ui.jsx";
@@ -124,7 +124,8 @@ function Manifesto({ image }) {
 
 /* ─────────────────── 03 · Próximas expedições ─────────────────── */
 function Expeditions({ upcoming, past, loading }) {
-  const featured = upcoming.slice(0, 3);
+  // Cancelada continua no catálogo, mas não ocupa o destaque da home.
+  const featured = upcoming.filter((t) => !isCancelled(t)).slice(0, 3);
   const hasUpcoming = featured.length > 0;
   const archive = past.slice(0, 3);
 

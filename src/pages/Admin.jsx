@@ -1,8 +1,9 @@
 import React, { forwardRef, useEffect, useRef, useState } from "react";
-import { Pencil, Plus, Trash2, Image as ImageIcon, Save, X, KeyRound, CalendarClock, MapPin, Upload, ShoppingBag, ExternalLink } from "lucide-react";
+import { Pencil, Plus, Trash2, Image as ImageIcon, Save, X, Upload, ExternalLink, Users, ChevronDown, LogOut } from "lucide-react";
 import { NumericFormat } from "react-number-format";
 import { uploadImage, deleteUploadedImage, isUploadedImage } from "../lib/imageUpload.js";
 import { LEVEL_TITLES } from "../lib/levels.js";
+import { STATUS_LABEL, statusPatch, tripStatus } from "../lib/trips.js";
 import CategoriesSection from "./AdminCategories.jsx";
 import ProductsSection from "./AdminProducts.jsx";
 import BannersSection from "./AdminBanners.jsx";
@@ -20,13 +21,63 @@ const API = {
 
 const cn = (...c) => c.filter(Boolean).join(" ");
 export function Button({ className = "", variant = "primary", children, ...props }) {
-  const base = "inline-flex items-center justify-center gap-1.5 rounded-2xl px-3 py-2 text-sm transition border";
+  const base = "inline-flex h-9 items-center justify-center gap-1 rounded-lg border px-3.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--moss)] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50";
   const variants = {
-    primary: "bg-[var(--moss)] text-white hover:bg-[var(--moss-600)] border-transparent",
-    secondary: "bg-white text-[var(--fg)] hover:bg-neutral-50 border-neutral-200",
-    destructive: "bg-red-600 text-white hover:bg-red-700 border-transparent",
+    primary: "bg-neutral-900 text-white hover:bg-neutral-700 border-transparent shadow-sm",
+    secondary: "bg-white text-neutral-800 hover:bg-neutral-50 border-neutral-300 shadow-sm",
+    destructive: "bg-white text-red-700 hover:bg-red-50 border-red-200 shadow-sm",
   };
   return <button className={cn(base, variants[variant], className)} {...props}>{children}</button>;
+}
+
+/** Grupo de ações de uma linha de tabela: botões colados, com um contorno só. */
+export function RowActions({ children }) {
+  return (
+    <div className="inline-flex items-stretch overflow-hidden rounded-lg border border-neutral-300 bg-white align-middle shadow-sm divide-x divide-neutral-200">
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Ação dentro de RowActions. Só ícone por padrão, com o nome em title e
+ * aria-label; `showLabel` escreve o nome ao lado. Com `href` vira link.
+ */
+export function IconButton({ icon: Icon, label, tone = "default", showLabel = false, href, className = "", ...props }) {
+  const classes = cn(
+    "inline-flex h-9 items-center justify-center gap-1.5 text-sm font-medium text-neutral-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--moss)] disabled:opacity-40",
+    showLabel ? "px-3" : "w-9",
+    tone === "danger" ? "hover:bg-red-50 hover:text-red-700" : "hover:bg-neutral-100 hover:text-neutral-900",
+    className
+  );
+  const content = <><Icon className="h-4 w-4" aria-hidden="true" />{showLabel && <span>{label}</span>}</>;
+  if (href) return <a href={href} target="_blank" rel="noreferrer" title={label} aria-label={label} className={classes}>{content}</a>;
+  return <button type="button" title={label} aria-label={label} className={classes} {...props}>{content}</button>;
+}
+
+const STATUS_TONE = {
+  publicado: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  oculto: "border-neutral-300 bg-neutral-100 text-neutral-700",
+  cancelado: "border-red-200 bg-red-50 text-red-800",
+};
+
+/** Status editável na própria linha: um seletor com a cor do status atual. */
+function StatusSelect({ value, onChange, disabled }) {
+  return (
+    <span className={cn("relative inline-flex items-center rounded-full border", STATUS_TONE[value], disabled && "opacity-60")}>
+      <span aria-hidden="true" className="pointer-events-none absolute left-2.5 h-1.5 w-1.5 rounded-full bg-current" />
+      <select
+        aria-label="Status do passeio"
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-8 cursor-pointer appearance-none rounded-full bg-transparent pl-6 pr-7 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--moss)] disabled:cursor-wait"
+      >
+        {Object.entries(STATUS_LABEL).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+      </select>
+      <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-2 h-3.5 w-3.5" />
+    </span>
+  );
 }
 export function Card({ className = "", children }) { return <div className={cn("rounded-3xl border bg-white shadow-sm", className)}>{children}</div>; }
 function CardHeader({ className = "", children }) { return <div className={cn("p-4", className)}>{children}</div>; }
@@ -106,11 +157,12 @@ export default function AdminPage(){
     fetch(`${API.trips}?all=1&admin=1`, { credentials:"include" }).then(r=>r.json()).then(d=>Array.isArray(d)&&setTrips(d)).catch(()=>setTrips([]));
   },[auth.ok]);
 
-  // PUT parcial: só o campo published, sem tocar em fotos ou no resto.
-  const togglePublished = async (trip)=>{
-    const res = await fetch(API.trips, { method:"PUT", credentials:"include", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ id: trip.id, published: trip.published === false }) });
+  // PUT parcial: só o que define o status, sem tocar em fotos ou no resto.
+  const changeStatus = async (trip, status)=>{
+    if(status === "cancelado" && !confirm(`Marcar "${trip.name}" como cancelado? Ele continua no site, com o aviso de cancelamento e sem inscrição.`)) return;
+    const res = await fetch(API.trips, { method:"PUT", credentials:"include", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ id: trip.id, ...statusPatch(trip, status) }) });
     if(res.ok){ const data = await res.json(); setTrips(prev=>prev.map(t=>t.id===data.id?data:t)); }
-    else alert("Falha ao alterar a visibilidade.");
+    else alert("Falha ao alterar o status.");
   };
 
   if(auth.loading) return <div className="py-10 text-center text-neutral-600">Carregando…</div>;
@@ -125,12 +177,12 @@ export default function AdminPage(){
         <h1 className="text-2xl font-semibold tracking-tight">Área do administrador</h1>
         <div className="flex gap-2">
           <Button onClick={()=>setNewTripId(crypto.randomUUID())}><Plus className="w-4 h-4 mr-1" /> Novo passeio</Button>
-          <Button variant="secondary" onClick={async()=>{ await fetch(API.logout, { method:"POST", credentials:"include" }); location.reload(); }}>Sair</Button>
+          <Button variant="secondary" onClick={async()=>{ await fetch(API.logout, { method:"POST", credentials:"include" }); location.reload(); }}><LogOut className="w-4 h-4 mr-1" /> Sair</Button>
         </div>
       </div>
 
       {/* tabela futuros */}
-      <AdminTable title="Futuros" trips={fut} showParticipants onTogglePublished={togglePublished} onEdit={setEditing} onDelete={async (id)=>{
+      <AdminTable title="Futuros" trips={fut} showParticipants onChangeStatus={changeStatus} onEdit={setEditing} onDelete={async (id)=>{
         if(!confirm("Remover este passeio?")) return;
         const res = await fetch(`${API.trips}?id=${id}`, { method:"DELETE", credentials:"include" });
         if(res.ok) setTrips(prev=>prev.filter(t=>t.id!==id)); else alert("Falha ao remover.");
@@ -138,7 +190,7 @@ export default function AdminPage(){
 
       {/* tabela passados */}
       <div className="mt-8" />
-      <AdminTable title="Passados" trips={past} onTogglePublished={togglePublished} onEdit={setEditing} onDelete={async (id)=>{
+      <AdminTable title="Passados" trips={past} onChangeStatus={changeStatus} onEdit={setEditing} onDelete={async (id)=>{
         if(!confirm("Remover este passeio?")) return;
         const res = await fetch(`${API.trips}?id=${id}`, { method:"DELETE", credentials:"include" });
         if(res.ok) setTrips(prev=>prev.filter(t=>t.id!==id)); else alert("Falha ao remover.");
@@ -196,8 +248,11 @@ function LoginForm({ onSuccess }){
   );
 }
 
-function AdminTable({ title, trips, onEdit, onDelete, onTogglePublished, showParticipants=false }){
+function AdminTable({ title, trips, onEdit, onDelete, onChangeStatus, showParticipants=false }){
   const [open, setOpen] = useState({});
+  // Passeio com troca de status em andamento: trava o seletor até a resposta.
+  const [saving, setSaving] = useState(null);
+  const setStatus = async (trip, status)=>{ setSaving(trip.id); try { await onChangeStatus?.(trip, status); } finally { setSaving(null); } };
   const [participants, setParticipants] = useState({});
   const toggle = async(id)=>{
     setOpen(o=>({ ...o, [id]: !o[id] }));
@@ -234,14 +289,18 @@ function AdminTable({ title, trips, onEdit, onDelete, onTogglePublished, showPar
                       <td className="py-2 pr-3">{t.location || <span className="text-neutral-500">—</span>}</td>
                       <td className="py-2 pr-3">{(t.images||[]).length}</td>
                       <td className="py-2 pr-3">
-                        <button type="button" onClick={()=>onTogglePublished?.(t)} className={`rounded px-2 py-0.5 text-xs ${t.published!==false ? "bg-green-100 text-green-800" : "bg-neutral-200 text-neutral-600"}`}>
-                          {t.published!==false ? "Publicado" : "Oculto"}
-                        </button>
+                        <StatusSelect value={tripStatus(t)} disabled={saving===t.id} onChange={(status)=>setStatus(t, status)} />
                       </td>
-                      <td className="py-2 text-right">
-                        {showParticipants && <Button variant="secondary" className="mr-2" onClick={()=>toggle(t.id)}>{open[t.id]?"Esconder":"Participantes"}</Button>}
-                        <Button variant="secondary" className="mr-2" onClick={()=>onEdit(t)}><Pencil className="w-4 h-4 mr-1" /> Editar</Button>
-                        <Button variant="destructive" onClick={()=>onDelete(t.id)}><Trash2 className="w-4 h-4 mr-1" /> Remover</Button>
+                      <td className="py-2 text-right whitespace-nowrap">
+                        <RowActions>
+                          {showParticipants && <IconButton icon={Users} label="Participantes" showLabel aria-expanded={!!open[t.id]} className={open[t.id] ? "bg-neutral-100 text-neutral-900" : ""} onClick={()=>toggle(t.id)} />}
+                          {/* Oculto não tem página pública: o botão fica no lugar, desligado, para as colunas não dançarem. */}
+                          {t.published!==false
+                            ? <IconButton icon={ExternalLink} label="Ver no site" href={`/passeio/${t.id}`} />
+                            : <IconButton icon={ExternalLink} label="Oculto: não aparece no site" disabled />}
+                          <IconButton icon={Pencil} label="Editar" onClick={()=>onEdit(t)} />
+                          <IconButton icon={Trash2} label="Remover" tone="danger" onClick={()=>onDelete(t.id)} />
+                        </RowActions>
                       </td>
                     </tr>
                     {showParticipants && open[t.id] && (
@@ -431,11 +490,18 @@ function TripForm({ initial, onSave, onCancel, onUploaded }){
         Expedição Signature
         <span className="text-xs text-neutral-500">— mostra a etiqueta Signature no card e na página</span>
       </label>
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={form.published !== false} onChange={e=>update({published:e.target.checked})} />
-        Publicado no site
-        <span className="text-xs text-neutral-500">— desmarcado, o passeio fica só aqui no admin</span>
-      </label>
+      <div>
+        <Label>Status</Label>
+        <select
+          value={tripStatus(form)}
+          onChange={e=>update(statusPatch(form, e.target.value))}
+          className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)] border-neutral-300"
+        >
+          <option value="publicado">Publicado — aparece no site</option>
+          <option value="oculto">Oculto — fica só aqui no admin</option>
+          <option value="cancelado">Cancelado — aparece no site como cancelado, sem inscrição</option>
+        </select>
+      </div>
       <div className="flex justify-end gap-2 mt-2">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>
         <Button type="submit" disabled={uploading}><Save className="w-4 h-4 mr-1" /> Salvar</Button>

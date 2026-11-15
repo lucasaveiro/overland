@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Pencil, Plus, Trash2, Save, X, Upload, ShoppingBag, ExternalLink } from "lucide-react";
 import { NumericFormat } from "react-number-format";
-import { Button, Card, CardContent, Input, Label, Textarea, Dialog } from "./Admin.jsx";
+import { Button, IconButton, RowActions, Card, CardContent, Input, Label, Textarea, Dialog } from "./Admin.jsx";
 import { uploadImage, deleteUploadedImage, isUploadedImage } from "../lib/imageUpload.js";
 import { colorClassFor } from "../lib/products.js";
 import { formatBRL } from "../lib/format.js";
@@ -148,12 +148,10 @@ export default function ProductsSection({ categoriesVersion = 0 }) {
                         </button>
                       </td>
                       <td className="py-2 text-right whitespace-nowrap">
-                        <Button variant="secondary" className="mr-2" onClick={() => setEditing(p)}>
-                          <Pencil className="w-4 h-4 mr-1" /> Editar
-                        </Button>
-                        <Button variant="destructive" onClick={() => remove(p.id)}>
-                          <Trash2 className="w-4 h-4 mr-1" /> Remover
-                        </Button>
+                        <RowActions>
+                          <IconButton icon={Pencil} label="Editar" onClick={() => setEditing(p)} />
+                          <IconButton icon={Trash2} label="Remover" tone="danger" onClick={() => remove(p.id)} />
+                        </RowActions>
                       </td>
                     </tr>
                   ))}

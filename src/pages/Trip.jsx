@@ -6,7 +6,7 @@ import VehicleReadiness from "../components/site/VehicleReadiness.jsx";
 import { FAQAccordion, Timeline } from "../components/site/blocks.jsx";
 import { Arrow, Reveal, Topo, cn } from "../components/site/ui.jsx";
 import { formatBRL } from "../lib/format.js";
-import { API_REGISTER, API_TRIPS, formatTripDate, isUpcoming, tripDuration, tripKindLabel } from "../lib/trips.js";
+import { API_REGISTER, API_TRIPS, formatTripDate, isCancelled, isUpcoming, tripDuration, tripKindLabel } from "../lib/trips.js";
 import { track } from "../lib/analytics.js";
 import { useSeo } from "../lib/seo.js";
 
@@ -53,7 +53,10 @@ export default function TripPage() {
   }
 
   const d = trip.details || {};
-  const upcoming = isUpcoming(trip.date_time);
+  const cancelled = isCancelled(trip);
+  // Cancelada não aceita inscrição: para a página, deixa de ser "próxima".
+  const upcoming = isUpcoming(trip.date_time) && !cancelled;
+  const closedLabel = cancelled ? "Cancelada" : "Realizada";
   const kind = tripKindLabel(trip);
   const duration = tripDuration(trip);
   const cover = trip.images?.[0];
@@ -105,6 +108,7 @@ export default function TripPage() {
           <p className="eyebrow mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-brand">
             <span>Expedition Dossier</span>
             {kind && <span className="text-white/75">/ {kind}</span>}
+            {cancelled && <span className="bg-white px-2 py-1 text-carbon">Cancelada</span>}
           </p>
           <h1 className="display mt-5 max-w-[18ch] text-[44px] sm:text-[64px] lg:text-[96px]">{trip.name}</h1>
           <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4 border-t border-white/20 pt-6">
@@ -179,7 +183,7 @@ export default function TripPage() {
               <span className="meta text-carbon/60">OffXpedition / Expedition Brief</span>
               <span className="meta flex items-center gap-2 text-carbon/60">
                 <span className={cn("h-1.5 w-1.5 rounded-full", upcoming ? "bg-brand-deep" : "bg-carbon/30")} />
-                {upcoming ? "Inscrições abertas" : "Realizada"}
+                {upcoming ? "Inscrições abertas" : closedLabel}
               </span>
             </div>
             <dl className="grid sm:grid-cols-2 lg:grid-cols-3">
@@ -258,7 +262,7 @@ export default function TripPage() {
         <div className="site-container grid gap-12 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-5">
             <p className="eyebrow text-brand">Reservation</p>
-            <h2 className="h2 mt-5 lg:text-[56px]">{upcoming ? "Consulte sua participação" : "Expedição realizada"}</h2>
+            <h2 className="h2 mt-5 lg:text-[56px]">{upcoming ? "Consulte sua participação" : `Expedição ${closedLabel.toLowerCase()}`}</h2>
             <dl className="mt-10 border-t border-white/20">
               {trip.price_car != null && <PriceRow label="Por veículo · 2 pessoas" value={formatBRL(trip.price_car)} />}
               {trip.price_extra != null && <PriceRow label="Pessoa adicional" value={formatBRL(trip.price_extra)} />}
@@ -276,7 +280,7 @@ export default function TripPage() {
               <RegistrationForm trip={trip} />
             ) : (
               <div className="border-y border-white/20 py-10">
-                <p className="lead text-white/80">Esta expedição já aconteceu. Veja as próximas saídas publicadas.</p>
+                <p className="lead text-white/80">{cancelled ? "Esta expedição foi cancelada e não recebe inscrições." : "Esta expedição já aconteceu."} Veja as próximas saídas publicadas.</p>
                 <Link to="/expedicoes#proximas" className="btn-brand mt-8">Ver próximas saídas <Arrow /></Link>
               </div>
             )}
@@ -438,12 +442,14 @@ function MobileActionBar({ trip }) {
 function useEventSchema(trip) {
   useEffect(() => {
     if (!trip || !isUpcoming(trip.date_time)) return;
+    const cancelled = isCancelled(trip);
     const data = {
       "@context": "https://schema.org",
       "@type": "Event",
       name: trip.name,
       startDate: trip.date_time,
       eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      eventStatus: cancelled ? "https://schema.org/EventCancelled" : "https://schema.org/EventScheduled",
       organizer: { "@type": "Organization", name: "OffXpedition", url: window.location.origin },
       ...(trip.description && { description: trip.description }),
       ...(trip.images?.length && { image: trip.images }),

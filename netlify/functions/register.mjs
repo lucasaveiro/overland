@@ -26,9 +26,10 @@ export async function handler(event, context) {
     if (!tripId || !name || !whatsapp || !email) return json(400, { error: "tripId, name, whatsapp, email required" })
 
     // validate trip is upcoming
-    const { data: trip } = await supabase.from('trips').select('id, date_time, published').eq('id', tripId).single()
+    const { data: trip } = await supabase.from('trips').select('id, date_time, published, details').eq('id', tripId).single()
     if (!trip || !trip.published) return json(404, { error: "Trip not found" })
     if (new Date(trip.date_time).getTime() < Date.now()) return json(400, { error: "Trip already happened" })
+    if (trip.details?.cancelled === true) return json(400, { error: "Trip cancelled" })
 
     const payload = { id: crypto.randomUUID(), trip_id: tripId, name, whatsapp, email }
     const { error } = await supabase.from('registrations').insert(payload)

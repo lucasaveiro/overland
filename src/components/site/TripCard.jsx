@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { formatBRL } from "../../lib/format.js";
-import { formatTripDate, isUpcoming, tripDuration, tripKindLabel } from "../../lib/trips.js";
+import { formatTripDate, isCancelled, isUpcoming, tripDuration, tripKindLabel } from "../../lib/trips.js";
 import { track } from "../../lib/analytics.js";
 import { Arrow, Topo, cn } from "./ui.jsx";
 
@@ -11,7 +11,8 @@ import { Arrow, Topo, cn } from "./ui.jsx";
  * tipo de experiência e duração. Nada aqui é inferido.
  */
 export default function TripCard({ trip, size = "md", className = "" }) {
-  const upcoming = isUpcoming(trip.date_time);
+  const cancelled = isCancelled(trip);
+  const upcoming = isUpcoming(trip.date_time) && !cancelled;
   const large = size === "lg";
   const cover = trip.images?.[0];
   const kind = tripKindLabel(trip);
@@ -37,7 +38,7 @@ export default function TripCard({ trip, size = "md", className = "" }) {
 
       <div className="absolute left-5 top-5 flex items-center gap-2 bg-carbon/70 px-3 py-1.5 backdrop-blur-sm lg:left-7 lg:top-7">
         <span className={cn("h-1.5 w-1.5 rounded-full", upcoming ? "bg-brand" : "bg-white/50")} />
-        <span className="meta text-[11px] text-white">{upcoming ? "Inscrições abertas" : "Realizada"}</span>
+        <span className="meta text-[11px] text-white">{cancelled ? "Cancelada" : upcoming ? "Inscrições abertas" : "Realizada"}</span>
       </div>
 
       <div className={cn("relative p-5 lg:p-7", large && "lg:p-10")}>

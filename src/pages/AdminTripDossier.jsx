@@ -16,7 +16,7 @@ const textToPairs = (text, a, b) =>
 export function cleanDetails(details) {
   const out = {};
   Object.entries(details || {}).forEach(([k, v]) => {
-    if (Array.isArray(v) ? v.length : v !== "" && v != null) out[k] = v;
+    if (Array.isArray(v) ? v.length : v !== "" && v != null && v !== false) out[k] = v;
   });
   return out;
 }
