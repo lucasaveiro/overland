@@ -23,6 +23,11 @@ create table if not exists public.trips (
   images               jsonb default '[]'::jsonb,
   -- false = rascunho: some da listagem publica e /passeio/<id> responde 404.
   published            boolean not null default true,
+  -- etiqueta "Signature" para roteiros em destinos de alto padrao.
+  signature            boolean not null default false,
+  -- dados do dossie do roteiro (duracao, encontro, terreno, incluso, dia a dia,
+  -- perguntas...). Tudo opcional: a pagina so mostra o que estiver preenchido.
+  details              jsonb not null default '{}'::jsonb,
   created_at           timestamptz default now()
 );
 
@@ -32,6 +37,30 @@ create table if not exists public.registrations (
   name       text not null,
   whatsapp   text not null,
   email      text not null,
+  created_at timestamptz default now()
+);
+
+-- Em banco ja existente, as colunas novas de trips entram com:
+--   alter table public.trips add column if not exists signature boolean not null default false;
+--   alter table public.trips add column if not exists details jsonb not null default '{}'::jsonb;
+
+-- ===== Solicitacoes comerciais =====
+-- Proposta de marca, lista do Club, filme pessoal e interesse em Signature Day.
+-- kind: brand | club | films | signature_day. status: novo | em_contato | concluido.
+-- details guarda os campos proprios de cada formulario; source guarda a pagina
+-- de origem e os parametros utm_* da visita.
+
+create table if not exists public.leads (
+  id         uuid primary key default gen_random_uuid(),
+  kind       text not null,
+  name       text not null,
+  email      text not null,
+  whatsapp   text,
+  company    text,
+  details    jsonb not null default '{}'::jsonb,
+  source     jsonb not null default '{}'::jsonb,
+  consent    boolean not null default false,
+  status     text not null default 'novo',
   created_at timestamptz default now()
 );
 
@@ -106,6 +135,7 @@ alter table public.subcategories      enable row level security;
 alter table public.products           enable row level security;
 alter table public.product_categories enable row level security;
 alter table public.banners            enable row level security;
+alter table public.leads              enable row level security;
 
 -- ===== Índices =====
 
@@ -113,6 +143,7 @@ create index if not exists trips_date_time_idx        on public.trips (date_time
 create index if not exists registrations_trip_id_idx  on public.registrations (trip_id);
 create index if not exists products_active_idx        on public.products (active, created_at desc);
 create index if not exists product_categories_cat_idx on public.product_categories (category_id, subcategory_id);
+create index if not exists leads_created_at_idx       on public.leads (created_at desc);
 create index if not exists banners_active_idx         on public.banners (active, sort_order);
 
 -- ===== Storage =====

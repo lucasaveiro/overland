@@ -119,7 +119,11 @@ export async function handler(event) {
         price_car: body.priceCar ?? body.price_car ?? null,
         price_extra: body.priceExtra ?? body.price_extra ?? null,
         published: body.published ?? true,
+        signature: body.signature ?? false,
       }
+      // Só entra quando o admin preencheu o dossiê: assim o cadastro continua
+      // funcionando em banco que ainda não tem a coluna details.
+      if (body.details !== undefined) payload.details = body.details
       if (!payload.name || !payload.date_time) return json(400, { error: 'name and date_time are required' }, event)
       const { data, error } = await supabase.from('trips').insert(payload).select().single()
       if (error) return json(500, { error: error.message }, event)
@@ -140,7 +144,9 @@ export async function handler(event) {
         price_car: body.priceCar ?? body.price_car,
         price_extra: body.priceExtra ?? body.price_extra,
         published: body.published,
+        signature: body.signature,
       }
+      if (body.details !== undefined) patch.details = body.details
       const { data, error } = await supabase.from('trips').update(patch).eq('id', body.id).select().single()
       if (error) return json(500, { error: error.message }, event)
       return json(200, data, event)

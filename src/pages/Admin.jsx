@@ -145,7 +145,7 @@ export default function AdminPage(){
       {/* dialogs */}
       {newTripId && <Dialog onClose={()=>discardDialog(()=>setNewTripId(null))}>
         <h3 className="text-lg font-semibold mb-2">Novo passeio</h3>
-      <TripForm initial={{ id: newTripId, name:"", dateTime:new Date().toISOString(), location:"", difficulty:"", description:"", completeDescription:"", images:[], priceCar:null, priceExtra:null, published:true }}
+      <TripForm initial={{ id: newTripId, name:"", dateTime:new Date().toISOString(), location:"", difficulty:"", description:"", completeDescription:"", images:[], priceCar:null, priceExtra:null, published:true, signature:false }}
           onUploaded={(url)=>setSessionUploads(prev=>[...prev, url])}
           onCancel={()=>discardDialog(()=>setNewTripId(null))}
           onSave={async (created)=>{
@@ -163,7 +163,7 @@ export default function AdminPage(){
       {editing && <Dialog onClose={()=>discardDialog(()=>setEditing(null))}>
         <h3 className="text-lg font-semibold mb-2">Editar passeio</h3>
 
-        <TripForm initial={{ id:editing.id, name:editing.name, dateTime:editing.date_time, location:editing.location, difficulty:editing.difficulty, description:editing.description, completeDescription:editing.complete_description, images:editing.images||[], priceCar:editing.price_car, priceExtra:editing.price_extra, published:editing.published !== false }}
+        <TripForm initial={{ id:editing.id, name:editing.name, dateTime:editing.date_time, location:editing.location, difficulty:editing.difficulty, description:editing.description, completeDescription:editing.complete_description, images:editing.images||[], priceCar:editing.price_car, priceExtra:editing.price_extra, published:editing.published !== false, signature:!!editing.signature }}
           onUploaded={(url)=>setSessionUploads(prev=>[...prev, url])}
           onCancel={()=>discardDialog(()=>setEditing(null))}
           onSave={async (patch)=>{
@@ -225,7 +225,7 @@ function AdminTable({ title, trips, onEdit, onDelete, onTogglePublished, showPar
                 {trips.slice().sort((a,b)=>new Date(a.date_time)-new Date(b.date_time)).map(t=>(
                   <React.Fragment key={t.id}>
                     <tr className="border-b last:border-0">
-                      <td className="py-2 pr-3 font-medium">{t.name || <span className="text-neutral-500">(sem nome)</span>}</td>
+                      <td className="py-2 pr-3 font-medium">{t.name || <span className="text-neutral-500">(sem nome)</span>}{t.signature && <span className="ml-2 rounded bg-black px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-300">Signature</span>}</td>
                       <td className="py-2 pr-3">{new Intl.DateTimeFormat("pt-BR",{dateStyle:"medium", timeStyle:"short"}).format(new Date(t.date_time))}</td>
                       <td className="py-2 pr-3">{t.location || <span className="text-neutral-500">—</span>}</td>
                       <td className="py-2 pr-3">{(t.images||[]).length}</td>
@@ -415,6 +415,11 @@ function TripForm({ initial, onSave, onCancel, onUploaded }){
           ))}
         </div>}
       </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={!!form.signature} onChange={e=>update({signature:e.target.checked})} />
+        Expedição Signature
+        <span className="text-xs text-neutral-500">— mostra a etiqueta Signature no card e na página</span>
+      </label>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={form.published !== false} onChange={e=>update({published:e.target.checked})} />
         Publicado no site
