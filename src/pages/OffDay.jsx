@@ -33,9 +33,9 @@ const FORM_FIELDS = [
   { name: "message", label: "Mensagem", type: "textarea" },
 ];
 
-export default function SignatureDayPage() {
+export default function OffDayPage() {
   useSeo({
-    title: "Signature Day",
+    title: "Off Day",
     description: "Experiências off-road premium de um dia, com o seu próprio 4x4 e sem precisar organizar cada detalhe da jornada.",
   });
   const { upcoming, loading } = useTrips();
@@ -46,7 +46,7 @@ export default function SignatureDayPage() {
       <CinematicHero
         tall
         image={heroImage}
-        eyebrow="Signature Day / One Day Experience"
+        eyebrow="Off Day / One Day Experience"
         title="Um dia fora da rotina."
         text="Você não precisa atravessar o país para viver uma experiência memorável. Leve o seu 4x4 para um dia planejado, com atenção a cada detalhe."
       >
@@ -72,7 +72,7 @@ export default function SignatureDayPage() {
         ) : (
           <>
             <Pending label="Em desenvolvimento">
-              As primeiras datas de Signature Day estão sendo planejadas e serão publicadas aqui. Deixe seu contato abaixo para ser avisado.
+              As primeiras datas de Off Day estão sendo planejadas e serão publicadas aqui. Deixe seu contato abaixo para ser avisado.
             </Pending>
             {upcoming.length > 0 && (
               <Link to="/expedicoes#proximas" className="btn-outline-dark mt-10">Ver todas as próximas saídas <Arrow /></Link>
@@ -97,16 +97,16 @@ export default function SignatureDayPage() {
         id="consulta"
         tone="ivory"
         label="05 / Consulta"
-        title="Quero viver um Signature Day."
+        title="Quero viver um Off Day."
         intro="Conte de onde você parte e qual é o seu veículo. Avisamos quando houver uma data que combine."
       >
         <LeadForm
-          kind="signature_day"
+          kind="off_day"
           fields={FORM_FIELDS}
           submitLabel="Enviar consulta"
-          event="submit_signature_day_lead"
+          event="submit_off_day_lead"
           successTitle="Consulta enviada."
-          successText="Recebemos seus dados e avisaremos sobre as próximas datas de Signature Day."
+          successText="Recebemos seus dados e avisaremos sobre as próximas datas de Off Day."
           className="max-w-3xl"
         />
       </EditorialSection>

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import { Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 import Header from "./components/site/Header.jsx";
 import Footer from "./components/site/Footer.jsx";
 import Home from "./pages/Home.jsx";
@@ -8,7 +8,7 @@ import Prepare4x4Page from "./pages/Prepare4x4.jsx";
 import TripPage from "./pages/Trip.jsx";
 import AdminPage from "./pages/Admin.jsx";
 import ProdutosPage from "./pages/Produtos.jsx";
-import SignatureDayPage from "./pages/SignatureDay.jsx";
+import OffDayPage from "./pages/OffDay.jsx";
 import FilmsPage from "./pages/Films.jsx";
 import ParaMarcasPage from "./pages/ParaMarcas.jsx";
 import ClubPage from "./pages/Club.jsx";
@@ -24,7 +24,9 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/expedicoes" element={<ExpedicoesPage />} />
-          <Route path="/experiencias/signature-day" element={<SignatureDayPage />} />
+          <Route path="/passeios/off-day" element={<OffDayPage />} />
+          {/* Endereço antigo da página, de quando o produto se chamava Signature Day. */}
+          <Route path="/experiencias/signature-day" element={<Navigate to="/passeios/off-day" replace />} />
           <Route path="/prepare-seu-4x4" element={<Prepare4x4Page />} />
           <Route path="/films" element={<FilmsPage />} />
           <Route path="/para-marcas" element={<ParaMarcasPage />} />

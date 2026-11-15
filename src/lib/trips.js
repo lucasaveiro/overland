@@ -36,7 +36,7 @@ export const formatTripDate = (iso) => dateFmt.format(new Date(iso)).replace(/\.
 
 /* ───── Dossiê: campos opcionais em trips.details, preenchidos no admin ───── */
 
-export const KIND_LABEL = { day: "Signature Day", expedition: "Signature Expedition" };
+export const KIND_LABEL = { day: "Off Day", expedition: "Signature Expedition" };
 
 /** Rótulo do tipo de experiência, ou null quando o admin não definiu nenhum. */
 export function tripKindLabel(trip) {

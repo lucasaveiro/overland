@@ -20,9 +20,9 @@ export const NAV = [
   },
   {
     label: "Passeios",
-    to: "/experiencias/signature-day",
+    to: "/passeios/off-day",
     items: [
-      { label: "Signature Day", to: "/experiencias/signature-day" },
+      { label: "Off Day", to: "/passeios/off-day" },
       { label: "Como funciona", to: "/#padrao" },
       { label: "Prepare seu 4x4", to: "/prepare-seu-4x4" },
     ],

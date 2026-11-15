@@ -1,6 +1,6 @@
 // netlify/functions/leads.mjs
 // Solicitações comerciais que não são inscrição em passeio: proposta de marca,
-// lista do Club, filme pessoal e interesse em Signature Day. Inscrição em
+// lista do Club, filme pessoal e interesse em Off Day. Inscrição em
 // passeio continua em register.mjs / registrations.
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'node:crypto'
@@ -11,7 +11,7 @@ const SESSION_SECRET = (process.env.SESSION_SECRET || '').trim()
 
 const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
 
-const KINDS = ['brand', 'club', 'films', 'signature_day']
+const KINDS = ['brand', 'club', 'films', 'off_day']
 const STATUSES = ['novo', 'em_contato', 'concluido']
 
 const json = (status, data) => ({
@@ -59,7 +59,9 @@ export async function handler(event) {
       // para não ensinar o robô a contornar.
       if (body.website) return json(200, { ok: true })
 
-      const kind = text(body.kind, 30)
+      // 'signature_day' é o nome antigo de 'off_day': quem ainda estiver com a
+      // versão anterior do site aberta no navegador envia assim.
+      const kind = text(body.kind, 30) === 'signature_day' ? 'off_day' : text(body.kind, 30)
       const name = text(body.name, 120)
       const email = text(body.email, 160)
       if (!KINDS.includes(kind)) return json(400, { error: 'Tipo de solicitação inválido.' })

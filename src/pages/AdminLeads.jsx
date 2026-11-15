@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "./Admin.jsx";
 
 const API_LEADS = "/.netlify/functions/leads";
-const KIND = { brand: "Marcas", club: "Club", films: "Films", signature_day: "Signature Day" };
+const KIND = { brand: "Marcas", club: "Club", films: "Films", off_day: "Off Day" };
 const STATUS = { novo: "Novo", em_contato: "Em contato", concluido: "Concluído" };
 
 /** Solicitações comerciais recebidas pelos formulários do site. */

@@ -45,8 +45,8 @@ create table if not exists public.registrations (
 --   alter table public.trips add column if not exists details jsonb not null default '{}'::jsonb;
 
 -- ===== Solicitacoes comerciais =====
--- Proposta de marca, lista do Club, filme pessoal e interesse em Signature Day.
--- kind: brand | club | films | signature_day. status: novo | em_contato | concluido.
+-- Proposta de marca, lista do Club, filme pessoal e interesse em Off Day.
+-- kind: brand | club | films | off_day. status: novo | em_contato | concluido.
 -- details guarda os campos proprios de cada formulario; source guarda a pagina
 -- de origem e os parametros utm_* da visita.
 
