@@ -296,7 +296,7 @@ function ProductForm({ initial, categories, onSave, onCancel, onUploaded }) {
       <div>
         <Label>Categorias do produto</Label>
         <p className="mb-2 text-xs text-neutral-500">
-          Marque quantas quiser. Ex.: a roda fica em Offroad › Pneus e rodas e também em Viatura Offgrid.
+          Marque quantas quiser. Ex.: a roda fica em Offroad › Pneus e rodas e também em Viatura OffXpedition.
         </p>
         {categories.length === 0 ? (
           <p className="rounded-xl bg-[var(--sand)] px-3 py-2 text-xs text-neutral-600">

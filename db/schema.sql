@@ -66,7 +66,7 @@ create table if not exists public.leads (
 
 -- ===== Loja: taxonomia =====
 -- Categorias e subcategorias são dados, gerenciados pelo admin. O slug é o que
--- vai para a URL da loja (/produtos?c=viatura-offgrid), então renomear a
+-- vai para a URL da loja (/produtos?c=viatura-offxpedition), então renomear a
 -- categoria não quebra links já compartilhados.
 
 create table if not exists public.categories (
@@ -105,7 +105,7 @@ create table if not exists public.products (
 );
 
 -- Um produto pode estar em várias categorias, e em cada uma delas em no máximo
--- uma subcategoria. É o que permite uma categoria curada ("Viatura Offgrid")
+-- uma subcategoria. É o que permite uma categoria curada ("Viatura OffXpedition")
 -- reunir produtos que continuam aparecendo nas categorias de origem.
 create table if not exists public.product_categories (
   product_id     uuid not null references public.products(id) on delete cascade,
