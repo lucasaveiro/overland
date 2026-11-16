@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>Laboratório de marca — OffXpedition</title>
+<!--
+  Página de estudo, só para uso local (npm run dev / netlify dev).
+  Não é entrada do build do Vite, então não vai para o site publicado.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --carbon: #111412; --charcoal: #202522; --ivory: #F3F1EA; --stone: #DADDD6; --muted: #818982;
+    --g: #14A514; --on-g: #111412;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; color: var(--carbon); font-family: Manrope, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
+  @media (min-width: 900px) { .wrap { padding: 0 48px; } }
+  .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; text-transform: uppercase; letter-spacing: .14em; }
+  h1, h2 { font-family: "Barlow Condensed", sans-serif; text-transform: uppercase; font-weight: 700; line-height: .95; margin: 0; }
+  h1 { font-size: clamp(40px, 6vw, 72px); }
+  h2 { font-size: clamp(28px, 3.4vw, 44px); }
+  p { line-height: 1.6; max-width: 68ch; }
+  section { padding: 56px 0; border-top: 1px solid rgba(17,20,18,.1); }
+  .intro { padding: 56px 0 40px; }
+  .note { color: #5d655f; font-size: 15px; }
+
+  /* Barra fixa: escolhe o verde aplicado na página inteira */
+  .bar { position: sticky; top: 0; z-index: 5; background: #fff; border-bottom: 1px solid rgba(17,20,18,.1); }
+  .bar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-top: 12px; padding-bottom: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; border: 1px solid rgba(17,20,18,.2); border-radius: 3px; background: #fff; color: var(--carbon); cursor: pointer; font: 500 12px "JetBrains Mono", monospace; letter-spacing: .06em; }
+  .chip i { width: 16px; height: 16px; border-radius: 50%; display: block; }
+  .chip[aria-pressed="true"] { background: var(--carbon); color: #fff; border-color: var(--carbon); }
+
+  /* ===== Logotipo proposto: texto vivo em Barlow Condensed + X desenhado ===== */
+  .wm { display: inline-flex; align-items: baseline; font-family: "Barlow Condensed", sans-serif; text-transform: uppercase; line-height: 1; white-space: nowrap; color: inherit; }
+  .wm svg { height: .7em; width: .6em; flex: none; margin: 0 .07em; fill: var(--g); }
+  .wm-a { font-weight: 700; letter-spacing: .035em; }
+  .wm-b { font-weight: 500; letter-spacing: .2em; }
+  .wm-b svg { width: .56em; margin: 0 .2em 0 .02em; }
+  .wm-c { font-weight: 600; letter-spacing: .08em; }
+  .wm-c svg { margin: 0 .1em 0 .03em; }
+
+  .stage { display: grid; gap: 16px; grid-template-columns: 1fr; margin-top: 28px; }
+  @media (min-width: 900px) { .stage { grid-template-columns: repeat(2, 1fr); } }
+  .card { border: 1px solid rgba(17,20,18,.12); border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
+  .card .label { padding: 10px 14px; border-bottom: 1px solid rgba(17,20,18,.1); color: #5d655f; }
+  .plate { display: flex; align-items: center; justify-content: center; min-height: 190px; padding: 28px 20px; }
+  .on-white { background: #fff; color: var(--carbon); }
+  .on-ivory { background: var(--ivory); color: var(--carbon); }
+  .on-carbon { background: var(--carbon); color: #fff; }
+  .plate .wm { font-size: clamp(38px, 6.4vw, 78px); }
+  .plate canvas { width: min(100%, 440px); height: auto; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; }
+  .split .plate { min-height: 150px; }
+  .split .plate { padding: 28px 12px; overflow: hidden; }
+  .split .plate .wm { font-size: clamp(22px, 3.1vw, 40px); }
+  .split .plate .wm-b { font-size: clamp(16px, 2.2vw, 29px); }
+
+  /* ===== Grade dos verdes ===== */
+  .scroll { overflow-x: auto; margin-top: 28px; }
+  .grid { display: grid; grid-template-columns: repeat(4, minmax(250px, 1fr)); gap: 16px; min-width: 1060px; }
+  .col { border: 1px solid rgba(17,20,18,.12); border-radius: 4px; overflow: hidden; }
+  .sw { height: 96px; background: var(--g); }
+  .meta { padding: 14px; border-bottom: 1px solid rgba(17,20,18,.1); }
+  .meta b { font: 600 22px "Barlow Condensed", sans-serif; text-transform: uppercase; letter-spacing: .04em; display: block; }
+  .meta .mono { color: #5d655f; display: block; margin-top: 6px; letter-spacing: .08em; }
+  .cell { display: flex; align-items: center; justify-content: center; min-height: 112px; padding: 18px 14px; border-bottom: 1px solid rgba(17,20,18,.08); }
+  .col .cell:last-child { border-bottom: 0; }
+  .cell .wm { font-size: 34px; }
+  .btn { display: inline-flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 24px; border-radius: 3px; background: var(--g); color: var(--on-g); font: 600 17px "Barlow Condensed", sans-serif; text-transform: uppercase; letter-spacing: .08em; }
+  .eyebrow { display: flex; align-items: center; gap: 12px; color: var(--g); }
+  .eyebrow::before { content: ""; width: 34px; height: 2px; background: var(--g); }
+  .link { color: var(--g); font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
+  .cell canvas { width: 76px; height: 76px; }
+  .stack { flex-direction: column; gap: 12px; text-align: center; }
+
+  /* ===== Aplicações ===== */
+  .apps { display: grid; gap: 16px; margin-top: 28px; }
+  .hdr { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 76px; padding: 0 28px; background: #fff; }
+  .hdr .wm { font-size: 30px; }
+  .hdr nav { display: none; gap: 26px; font: 600 16px "Barlow Condensed", sans-serif; text-transform: uppercase; letter-spacing: .08em; }
+  @media (min-width: 900px) { .hdr nav { display: flex; } }
+  .hero { background: linear-gradient(120deg, #111412 0%, #2a322c 60%, #46503f 100%); color: #fff; padding: 56px 28px; }
+  .hero .t { font: 700 clamp(40px, 6vw, 84px)/.92 "Barlow Condensed", sans-serif; text-transform: uppercase; margin: 18px 0 26px; max-width: 12ch; }
+  .small-row { display: flex; flex-wrap: wrap; align-items: center; gap: 28px 44px; padding: 28px; }
+  .avatar { width: 96px; height: 96px; border-radius: 50%; background: var(--carbon); display: grid; place-items: center; }
+  .avatar svg { width: 40px; height: 46px; fill: var(--g); }
+  .avatar.light { background: var(--ivory); }
+  .fav { width: 32px; height: 32px; border-radius: 6px; }
+  .fav svg { width: 14px; height: 16px; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="wrap">
+    <span class="mono">Verde aplicado</span>
+    <div class="chips" id="chips"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="intro">
+    <span class="mono" style="color:#5d655f">Estudo de marca · uso interno</span>
+    <h1 style="margin-top:14px">Laboratório de marca</h1>
+    <p>Compare o verde atual com três opções mais profundas e veja uma proposta de logotipo desenhada na mesma tipografia dos títulos do site. Troque o verde na barra acima: a página inteira acompanha.</p>
+  </div>
+
+  <section>
+    <h2>Logotipo: atual e proposta</h2>
+    <p class="note">A proposta troca a fonte redonda por Barlow Condensed em caixa alta, a mesma dos títulos do site, e dá ao X um desenho próprio: duas trilhas que se cruzam, uma passando sobre a outra.</p>
+    <div class="stage">
+      <div class="card">
+        <div class="label mono">Atual · arquivo PNG do site</div>
+        <div class="plate on-white"><canvas data-logo></canvas></div>
+      </div>
+      <div class="card">
+        <div class="label mono">Proposta A · assinatura principal</div>
+        <div class="split">
+          <div class="plate on-white"><span class="wm wm-a" data-wm></span></div>
+          <div class="plate on-carbon"><span class="wm wm-a" data-wm></span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="label mono">Proposta B · leve e espaçada</div>
+        <div class="split">
+          <div class="plate on-white"><span class="wm wm-b" data-wm></span></div>
+          <div class="plate on-carbon"><span class="wm wm-b" data-wm></span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="label mono">Proposta C · meio-termo</div>
+        <div class="split">
+          <div class="plate on-ivory"><span class="wm wm-c" data-wm></span></div>
+          <div class="plate on-carbon"><span class="wm wm-c" data-wm></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Os verdes lado a lado</h2>
+    <p class="note">Cada coluna usa um verde fixo, independente da barra. O contraste mínimo recomendado é 3:1 para elementos gráficos e títulos grandes, e 4,5:1 para texto corrido.</p>
+    <div class="scroll"><div class="grid" id="grid"></div></div>
+  </section>
+
+  <section>
+    <h2>Aplicações</h2>
+    <p class="note">Como o verde escolhido na barra se comporta nas situações reais do site, usando a proposta A.</p>
+    <div class="apps">
+      <div class="card">
+        <div class="label mono">Cabeçalho do site</div>
+        <div class="hdr">
+          <span class="wm wm-a" data-wm></span>
+          <nav><span>Expedições</span><span>Passeios</span><span>Films</span><span>Para marcas</span><span>Clube</span></nav>
+          <span class="btn" style="min-height:40px;font-size:15px;padding:0 18px">Explorar expedições</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="label mono">Hero sobre fundo escuro</div>
+        <div class="hero">
+          <span class="eyebrow mono">OffXpedition / Premium 4x4 experiences</span>
+          <div class="t">A estrada termina. A experiência começa.</div>
+          <span class="btn">Explorar expedições →</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="label mono">Tamanhos pequenos e avatar</div>
+        <div class="small-row">
+          <span class="wm wm-a" data-wm style="font-size:22px"></span>
+          <span class="wm wm-a" data-wm style="font-size:15px"></span>
+          <span class="avatar" data-x></span>
+          <span class="avatar light" data-x></span>
+          <span class="avatar fav" data-x></span>
+          <canvas data-symbol style="width:96px;height:96px"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const GREENS = [
+  { hex: "#0CFC0D", name: "Atual", note: "neon do logotipo" },
+  { hex: "#14A514", name: "Vivo", note: "funciona em claro e escuro" },
+  { hex: "#18990D", name: "Intermediário", note: "um passo mais sóbrio" },
+  { hex: "#1D8F06", name: "Profundo", note: "já existe como brand-deep" },
+];
+const CARBON = "#111412";
+
+// X desenhado: a barra "\" é interrompida onde a barra "/" passa por cima.
+const X = '<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' +
+  '<polygon points="0,0 24,0 45,27.6 33,43.4"/>' +
+  '<polygon points="55,72.4 67,56.6 100,100 76,100"/>' +
+  '<polygon points="76,0 100,0 24,100 0,100"/></svg>';
+const WM = "<span>Off</span>" + X + "<span>pedition</span>";
+
+const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.substr(i, 2), 16));
+const lum = (h) => {
+  const c = rgb(h).map((v) => v / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+};
+const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+const fmt = (n) => n.toFixed(2).replace(".", ",") + ":1";
+const onColor = (g) => (ratio(g, CARBON) >= ratio(g, "#FFFFFF") ? CARBON : "#FFFFFF");
+
+document.querySelectorAll("[data-wm]").forEach((el) => { el.innerHTML = WM; el.setAttribute("aria-label", "OffXpedition"); });
+document.querySelectorAll("[data-x]").forEach((el) => { el.innerHTML = X; });
+
+// Arquivos atuais da marca, com o verde trocado pixel a pixel.
+const load = (src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = src; });
+const images = Promise.all([
+  load("/src/assets/brand/logo-offxpedition.png"),
+  load("/src/assets/brand/symbol-topo.webp"),
+]);
+function paint(canvas, img, hex, symbol) {
+  const [tr, tg, tb] = rgb(hex);
+  canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0);
+  const d = ctx.getImageData(0, 0, canvas.width, canvas.height), p = d.data;
+  for (let i = 0; i < p.length; i += 4) {
+    const k = Math.max(0, Math.min(1, (p[i + 1] - p[i]) / 240)); // quanto do pixel é verde
+    if (symbol) { p[i] = tr; p[i + 1] = tg; p[i + 2] = tb; p[i + 3] = p[i + 3] * k; }
+    else if (k > 0) { const base = p[i]; p[i] = k * tr + (1 - k) * base; p[i + 1] = k * tg + (1 - k) * base; p[i + 2] = k * tb + (1 - k) * base; }
+  }
+  ctx.putImageData(d, 0, 0);
+}
+
+// Grade fixa: uma coluna por verde.
+const grid = document.getElementById("grid");
+GREENS.forEach((g) => {
+  const col = document.createElement("div");
+  col.className = "col";
+  col.style.setProperty("--g", g.hex);
+  col.style.setProperty("--on-g", onColor(g.hex));
+  col.innerHTML =
+    '<div class="sw"></div>' +
+    '<div class="meta"><b>' + g.name + " · " + g.hex + "</b>" +
+      '<span class="mono">' + g.note + "</span>" +
+      '<span class="mono">no branco ' + fmt(ratio(g.hex, "#FFFFFF")) + "</span>" +
+      '<span class="mono">no carbon ' + fmt(ratio(g.hex, CARBON)) + "</span></div>" +
+    '<div class="cell on-white"><span class="wm wm-a">' + WM + "</span></div>" +
+    '<div class="cell on-carbon"><span class="wm wm-a">' + WM + "</span></div>" +
+    '<div class="cell on-white"><canvas data-col-logo style="width:210px;height:auto"></canvas></div>' +
+    '<div class="cell on-carbon"><span class="btn">Explorar expedições →</span></div>' +
+    '<div class="cell on-white stack"><span class="btn">Garantir vaga</span><span class="link">Ver roteiro completo</span></div>' +
+    '<div class="cell on-ivory"><span class="eyebrow mono">Próximas saídas</span></div>' +
+    '<div class="cell on-carbon"><canvas data-col-symbol></canvas></div>';
+  grid.appendChild(col);
+  images.then(([logo, topo]) => {
+    paint(col.querySelector("[data-col-logo]"), logo, g.hex, false);
+    paint(col.querySelector("[data-col-symbol]"), topo, g.hex, true);
+  });
+});
+
+// Barra: aplica o verde escolhido na página inteira.
+const chips = document.getElementById("chips");
+function apply(hex) {
+  document.documentElement.style.setProperty("--g", hex);
+  document.documentElement.style.setProperty("--on-g", onColor(hex));
+  chips.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.hex === hex)));
+  images.then(([logo, topo]) => {
+    document.querySelectorAll("canvas[data-logo]").forEach((c) => paint(c, logo, hex, false));
+    document.querySelectorAll("canvas[data-symbol]").forEach((c) => paint(c, topo, hex, true));
+  });
+}
+GREENS.forEach((g) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "chip"; b.dataset.hex = g.hex;
+  b.innerHTML = '<i style="background:' + g.hex + '"></i>' + g.name + " " + g.hex;
+  b.addEventListener("click", () => apply(g.hex));
+  chips.appendChild(b);
+});
+apply("#14A514");
+</script>
+</body>
+</html>

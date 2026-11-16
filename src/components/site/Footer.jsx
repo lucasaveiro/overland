@@ -1,11 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import logo from "../../assets/brand/logo-offxpedition.png";
+import Logo from "./Logo.jsx";
 import { NAV } from "./Header.jsx";
 import { Topo } from "./ui.jsx";
 
-// Rodapé claro: o logotipo original é preto, então fica sobre marfim em vez de
-// ser invertido para caber num rodapé escuro.
+// Rodapé claro, sobre marfim: o logotipo usa as letras em carbon.
 export default function Footer() {
   return (
     <footer className="relative overflow-hidden border-t border-carbon/10 bg-ivory">
@@ -13,7 +12,7 @@ export default function Footer() {
       <div className="site-container relative py-16 lg:py-24">
         <div className="grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-5">
-            <img src={logo} alt="OffXpedition" width="841" height="156" className="h-8 w-auto lg:h-10" />
+            <Logo className="text-[40px] text-carbon lg:text-[48px]" />
             <p className="mt-6 max-w-sm text-[15px] leading-relaxed text-carbon/70">
               Expedições 4x4 cuidadosamente planejadas para quem acredita que a verdadeira viagem vai muito além do destino.
             </p>

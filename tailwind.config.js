@@ -3,16 +3,17 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
-      // Tokens do design system OffXpedition. Os verdes foram medidos nos
-      // arquivos da marca: `brand` é o X do logotipo, `brand-deep` é o traço
-      // do símbolo topográfico (usado onde o verde vivo não dá contraste).
+      // Tokens do design system OffXpedition. `brand` é o verde do X do
+      // logotipo: 3,27:1 no branco e 5,67:1 no carbon, então serve para
+      // grafismos e botões nos dois fundos. `brand-deep` e `brand-ink` ficam
+      // para texto pequeno sobre fundo claro, onde `brand` não dá contraste.
       colors: {
         carbon: "#111412",
         charcoal: "#202522",
         ivory: "#F3F1EA",
         stone: "#DADDD6",
         muted: "#818982",
-        brand: { DEFAULT: "#0CFC0D", deep: "#1D8F06", ink: "#156B05" },
+        brand: { DEFAULT: "#14A514", deep: "#1D8F06", ink: "#156B05" },
       },
       fontFamily: {
         display: ['"Barlow Condensed"', "Arial Narrow", "sans-serif"],
