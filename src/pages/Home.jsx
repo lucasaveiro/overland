@@ -62,12 +62,12 @@ function Hero() {
         </Reveal>
         <Reveal immediate delay={0.08}>
           <h1 className="h1-hero mt-6 max-w-[14ch]">
-            A estrada termina. <span className="block">A experiência começa.</span>
+            Longe de tudo. <span className="block">Nunca sozinho.</span>
           </h1>
         </Reveal>
         <Reveal immediate delay={0.16}>
           <p className="lead mt-7 max-w-xl text-white/85">
-            Expedições 4x4 cuidadosamente planejadas para quem acredita que a verdadeira viagem vai muito além do destino.
+            Expedições 4x4 guiadas, com roteiro e apoio planejados do início ao fim.
           </p>
         </Reveal>
         <Reveal immediate delay={0.24} className="mt-9 flex flex-col gap-3 sm:flex-row">
