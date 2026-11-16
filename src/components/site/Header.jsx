@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import logo from "../../assets/brand/logo-offxpedition.png";
+import Logo from "./Logo.jsx";
 import { Arrow, cn } from "./ui.jsx";
 
 /**
@@ -75,7 +75,7 @@ export default function Header() {
     <header className="sticky top-0 z-40 border-b border-carbon/10 bg-white">
       <div className="site-container flex h-16 items-center justify-between gap-6 lg:h-[76px]">
         <Link to="/" aria-label="OffXpedition — página inicial" className="flex-none">
-          <img src={logo} alt="OffXpedition" width="841" height="156" className="h-[22px] w-auto sm:h-[26px]" />
+          <Logo className="text-[28px] text-carbon sm:text-[32px]" />
         </Link>
 
         <nav aria-label="Principal" className="hidden h-full items-stretch xl:flex">

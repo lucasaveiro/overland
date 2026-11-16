@@ -22,7 +22,7 @@
     @apply bg-white font-sans text-carbon antialiased;
   }
   ::selection {
-    background: #0cfc0d;
+    background: #14a514;
     color: #111412;
   }
   :focus-visible {
