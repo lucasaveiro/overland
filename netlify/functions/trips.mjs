@@ -110,7 +110,8 @@ export async function handler(event) {
       const payload = {
         id: body.id,
         name: body.name,
-        date_time: body.dateTime || body.date_time,
+        // Sem data, o roteiro é anunciado no site como "Em breve".
+        date_time: body.dateTime || body.date_time || null,
         location: body.location || null,
         description: body.description || null,
         complete_description: body.completeDescription || body.complete_description || null,
@@ -124,7 +125,7 @@ export async function handler(event) {
       // Só entra quando o admin preencheu o dossiê: assim o cadastro continua
       // funcionando em banco que ainda não tem a coluna details.
       if (body.details !== undefined) payload.details = body.details
-      if (!payload.name || !payload.date_time) return json(400, { error: 'name and date_time are required' }, event)
+      if (!payload.name) return json(400, { error: 'name is required' }, event)
       const { data, error } = await supabase.from('trips').insert(payload).select().single()
       if (error) return json(500, { error: error.message }, event)
       return json(200, data, event)
@@ -135,7 +136,6 @@ export async function handler(event) {
       if (!body.id) return json(400, { error: 'id is required' }, event)
       const patch = {
         name: body.name,
-        date_time: body.dateTime || body.date_time,
         location: body.location,
         description: body.description,
         complete_description: body.completeDescription ?? body.complete_description,
@@ -147,6 +147,9 @@ export async function handler(event) {
         signature: body.signature,
       }
       if (body.details !== undefined) patch.details = body.details
+      // A data só muda quando vem no corpo; null (ou vazio) tira a data e deixa
+      // o roteiro como "Em breve". PUT parcial, como o de status, não a toca.
+      if ('dateTime' in body || 'date_time' in body) patch.date_time = body.dateTime || body.date_time || null
       const { data, error } = await supabase.from('trips').update(patch).eq('id', body.id).select().single()
       if (error) return json(500, { error: error.message }, event)
       return json(200, data, event)

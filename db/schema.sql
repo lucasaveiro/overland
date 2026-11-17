@@ -13,7 +13,8 @@
 create table if not exists public.trips (
   id                   uuid primary key default gen_random_uuid(),
   name                 text not null,
-  date_time            timestamptz not null,
+  -- nulo = roteiro anunciado sem data: aparece no site como "Em breve".
+  date_time            timestamptz,
   location             text,
   description          text,
   complete_description text,
@@ -43,6 +44,8 @@ create table if not exists public.registrations (
 -- Em banco ja existente, as colunas novas de trips entram com:
 --   alter table public.trips add column if not exists signature boolean not null default false;
 --   alter table public.trips add column if not exists details jsonb not null default '{}'::jsonb;
+-- E a data passa a ser opcional (roteiro "Em breve") com:
+--   alter table public.trips alter column date_time drop not null;
 
 -- ===== Solicitacoes comerciais =====
 -- Proposta de marca, lista do Club, filme pessoal e interesse em Off Day.

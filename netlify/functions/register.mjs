@@ -28,7 +28,8 @@ export async function handler(event, context) {
     // validate trip is upcoming
     const { data: trip } = await supabase.from('trips').select('id, date_time, published, details').eq('id', tripId).single()
     if (!trip || !trip.published) return json(404, { error: "Trip not found" })
-    if (new Date(trip.date_time).getTime() < Date.now()) return json(400, { error: "Trip already happened" })
+    // Sem data ("Em breve") aceita o contato: vale como pedido de aviso.
+    if (trip.date_time && new Date(trip.date_time).getTime() < Date.now()) return json(400, { error: "Trip already happened" })
     if (trip.details?.cancelled === true) return json(400, { error: "Trip cancelled" })
 
     const payload = { id: crypto.randomUUID(), trip_id: tripId, name, whatsapp, email }

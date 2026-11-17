@@ -3,9 +3,16 @@ import { useEffect, useMemo, useState } from "react";
 export const API_TRIPS = "/.netlify/functions/trips";
 export const API_REGISTER = "/.netlify/functions/register";
 
-export const isUpcoming = (iso) => new Date(iso).getTime() >= Date.now();
+/** Roteiro sem data definida: aparece no site como "Em breve". */
+export const isUndated = (trip) => !trip?.date_time;
 
-/** Passeios publicados, já separados em próximos (mais perto primeiro) e realizados. */
+/** Data futura. Sem data não é "próxima" nem "realizada": veja isUndated. */
+export const isUpcoming = (iso) => !!iso && new Date(iso).getTime() >= Date.now();
+
+/**
+ * Passeios publicados, já separados em próximos (mais perto primeiro) e
+ * realizados. Os sem data entram no fim dos próximos, como "Em breve".
+ */
 export function useTrips() {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,11 +26,14 @@ export function useTrips() {
   }, []);
 
   const upcoming = useMemo(
-    () => trips.filter((t) => isUpcoming(t.date_time)).sort((a, b) => new Date(a.date_time) - new Date(b.date_time)),
+    () => [
+      ...trips.filter((t) => isUpcoming(t.date_time)).sort((a, b) => new Date(a.date_time) - new Date(b.date_time)),
+      ...trips.filter(isUndated),
+    ],
     [trips]
   );
   const past = useMemo(
-    () => trips.filter((t) => !isUpcoming(t.date_time)).sort((a, b) => new Date(b.date_time) - new Date(a.date_time)),
+    () => trips.filter((t) => !isUndated(t) && !isUpcoming(t.date_time)).sort((a, b) => new Date(b.date_time) - new Date(a.date_time)),
     [trips]
   );
 
@@ -31,8 +41,9 @@ export function useTrips() {
 }
 
 const dateFmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
-/** "14 nov 2026" — formato de metadado, sem ponto de abreviação. */
-export const formatTripDate = (iso) => dateFmt.format(new Date(iso)).replace(/\./g, "").replace(/ de /g, " ");
+/** "14 nov 2026" — formato de metadado, sem ponto de abreviação. Sem data: "A definir". */
+export const formatTripDate = (iso) =>
+  iso ? dateFmt.format(new Date(iso)).replace(/\./g, "").replace(/ de /g, " ") : "A definir";
 
 /* ───── Dossiê: campos opcionais em trips.details, preenchidos no admin ───── */
 
@@ -60,7 +71,7 @@ export function tripRegion(trip) {
 }
 
 const monthFmt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" });
-export const tripMonth = (trip) => monthFmt.format(new Date(trip.date_time));
+export const tripMonth = (trip) => (isUndated(trip) ? "Em breve" : monthFmt.format(new Date(trip.date_time)));
 
 /* ───── Status: publicado, oculto ou cancelado ───── */
 
