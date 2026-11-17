@@ -6,7 +6,7 @@ import VehicleReadiness from "../components/site/VehicleReadiness.jsx";
 import { FAQAccordion, Timeline } from "../components/site/blocks.jsx";
 import { Arrow, Reveal, Topo, cn } from "../components/site/ui.jsx";
 import { formatBRL } from "../lib/format.js";
-import { API_REGISTER, API_TRIPS, formatTripDate, isCancelled, isUpcoming, tripDuration, tripKindLabel } from "../lib/trips.js";
+import { API_REGISTER, API_TRIPS, formatTripDate, isCancelled, isUndated, isUpcoming, tripDuration, tripKindLabel } from "../lib/trips.js";
 import { track } from "../lib/analytics.js";
 import { useSeo } from "../lib/seo.js";
 import { levelShort } from "../lib/levels.js";
@@ -57,6 +57,10 @@ export default function TripPage() {
   const cancelled = isCancelled(trip);
   // Cancelada não aceita inscrição: para a página, deixa de ser "próxima".
   const upcoming = isUpcoming(trip.date_time) && !cancelled;
+  // Sem data definida ("Em breve"): ainda não há inscrição, só o pedido de aviso.
+  const soon = isUndated(trip) && !cancelled;
+  // Recebe contato pelo formulário: com data futura ou ainda sem data.
+  const open = upcoming || soon;
   const closedLabel = cancelled ? "Cancelada" : "Realizada";
   const kind = tripKindLabel(trip);
   const duration = tripDuration(trip);
@@ -66,7 +70,9 @@ export default function TripPage() {
   const included = lines(d.included);
   const excluded = lines(d.excluded);
   const faq = lines(d.faq);
-  const fullDate = new Intl.DateTimeFormat("pt-BR", { dateStyle: "full", timeStyle: "short" }).format(new Date(trip.date_time));
+  const fullDate = isUndated(trip)
+    ? "A definir"
+    : new Intl.DateTimeFormat("pt-BR", { dateStyle: "full", timeStyle: "short" }).format(new Date(trip.date_time));
 
   const brief = [
     ["Data", fullDate],
@@ -89,8 +95,8 @@ export default function TripPage() {
     ["duvidas", "Dúvidas", faq.length > 0],
   ].filter(([, , on]) => on);
 
-  const cta = upcoming ? "Consultar participação" : "Ver próximas saídas";
-  const ctaHref = upcoming ? "#reserva" : "/expedicoes#proximas";
+  const cta = soon ? "Quero ser avisado" : upcoming ? "Consultar participação" : "Ver próximas saídas";
+  const ctaHref = open ? "#reserva" : "/expedicoes#proximas";
 
   return (
     <article>
@@ -110,6 +116,7 @@ export default function TripPage() {
             <span>Expedition Dossier</span>
             {kind && <span className="text-white/75">/ {kind}</span>}
             {cancelled && <span className="bg-white px-2 py-1 text-carbon">Cancelada</span>}
+            {soon && <span className="border border-white/60 px-2 py-1 text-white">Em breve</span>}
           </p>
           <h1 className="display mt-5 max-w-[18ch] text-[44px] sm:text-[64px] lg:text-[96px]">{trip.name}</h1>
           <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4 border-t border-white/20 pt-6">
@@ -119,7 +126,7 @@ export default function TripPage() {
             {trip.difficulty && <HeroFact label="Nível" value={levelShort(trip.difficulty)} />}
           </dl>
           <div className="mt-8">
-            <a href={ctaHref} className="btn-brand" onClick={() => upcoming && track("begin_reservation", { expedition_id: trip.id, origin: "hero" })}>
+            <a href={ctaHref} className="btn-brand" onClick={() => open && track("begin_reservation", { expedition_id: trip.id, origin: "hero" })}>
               {cta} <Arrow />
             </a>
           </div>
@@ -147,7 +154,7 @@ export default function TripPage() {
             ))}
           </ul>
           <a href={ctaHref} className="meta inline-flex min-h-[40px] items-center gap-3 font-semibold text-carbon hover:text-brand-ink"
-            onClick={() => upcoming && track("begin_reservation", { expedition_id: trip.id, origin: "dossier_nav" })}>
+            onClick={() => open && track("begin_reservation", { expedition_id: trip.id, origin: "dossier_nav" })}>
             {cta} <Arrow className="text-brand-deep" />
           </a>
         </div>
@@ -183,8 +190,8 @@ export default function TripPage() {
             <div className="flex items-center justify-between gap-4 border-b border-carbon/20 px-5 py-4 lg:px-8">
               <span className="meta text-carbon/60">OffXpedition / Expedition Brief</span>
               <span className="meta flex items-center gap-2 text-carbon/60">
-                <span className={cn("h-1.5 w-1.5 rounded-full", upcoming ? "bg-brand-deep" : "bg-carbon/30")} />
-                {upcoming ? "Inscrições abertas" : closedLabel}
+                <span className={cn("h-1.5 w-1.5 rounded-full", upcoming ? "bg-brand-deep" : soon ? "border border-brand-deep" : "bg-carbon/30")} />
+                {soon ? "Em breve" : upcoming ? "Inscrições abertas" : closedLabel}
               </span>
             </div>
             <dl className="grid sm:grid-cols-2 lg:grid-cols-3">
@@ -222,7 +229,7 @@ export default function TripPage() {
             <h2 className="h2 mt-5 lg:text-[56px]">O seu 4x4 neste roteiro</h2>
           </Reveal>
           <div className="mt-10 lg:mt-14">
-            <VehicleReadiness levelTitle={trip.difficulty} consultHref={upcoming ? "#reserva" : undefined} />
+            <VehicleReadiness levelTitle={trip.difficulty} consultHref={open ? "#reserva" : undefined} />
           </div>
         </div>
       </section>
@@ -263,12 +270,19 @@ export default function TripPage() {
         <div className="site-container grid gap-12 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-5">
             <p className="eyebrow text-brand">Reservation</p>
-            <h2 className="h2 mt-5 lg:text-[56px]">{upcoming ? "Consulte sua participação" : `Expedição ${closedLabel.toLowerCase()}`}</h2>
+            <h2 className="h2 mt-5 lg:text-[56px]">{soon ? "Em breve" : upcoming ? "Consulte sua participação" : `Expedição ${closedLabel.toLowerCase()}`}</h2>
             <dl className="mt-10 border-t border-white/20">
               {trip.price_car != null && <PriceRow label="Por veículo · 2 pessoas" value={formatBRL(trip.price_car)} />}
               {trip.price_extra != null && <PriceRow label="Pessoa adicional" value={formatBRL(trip.price_extra)} />}
+              {soon && <PriceRow label="Data" value="A definir" />}
               {trip.price_car == null && upcoming && <PriceRow label="Valores" value="Sob consulta" />}
             </dl>
+            {soon && (
+              <p className="mt-6 max-w-md text-[15px] leading-relaxed text-white/65">
+                A data deste roteiro ainda não foi definida. Deixe seu contato e a organização avisa quando ela for
+                confirmada. O envio não é um pagamento nem reserva a vaga.
+              </p>
+            )}
             {upcoming && (
               <p className="mt-6 max-w-md text-[15px] leading-relaxed text-white/65">
                 O envio do formulário não é um pagamento nem confirma a vaga: a organização entra em contato para
@@ -277,8 +291,8 @@ export default function TripPage() {
             )}
           </div>
           <div className="lg:col-span-6 lg:col-start-7">
-            {upcoming ? (
-              <RegistrationForm trip={trip} />
+            {open ? (
+              <RegistrationForm trip={trip} soon={soon} />
             ) : (
               <div className="border-y border-white/20 py-10">
                 <p className="lead text-white/80">{cancelled ? "Esta expedição foi cancelada e não recebe inscrições." : "Esta expedição já aconteceu."} Veja as próximas saídas publicadas.</p>
@@ -289,7 +303,7 @@ export default function TripPage() {
         </div>
       </section>
 
-      {upcoming && <MobileActionBar trip={trip} />}
+      {open && <MobileActionBar trip={trip} soon={soon} />}
 
       {lightbox !== null && (
         <Lightbox images={trip.images.map((s) => ({ src: s, alt: trip.name }))} startIndex={lightbox} onClose={() => setLightbox(null)} />
@@ -338,8 +352,11 @@ function IncludeList({ title, items, on = false }) {
   );
 }
 
-/** Inscrição no roteiro: continua gravando em registrations, como antes. */
-function RegistrationForm({ trip }) {
+/**
+ * Inscrição no roteiro: continua gravando em registrations, como antes.
+ * Com `soon` (roteiro sem data), o mesmo envio vale como pedido de aviso.
+ */
+function RegistrationForm({ trip, soon = false }) {
   const [form, setForm] = useState({ name: "", whatsapp: "", email: "" });
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
@@ -376,8 +393,10 @@ function RegistrationForm({ trip }) {
     return (
       <div role="status" className="rounded-[4px] bg-white p-8 text-carbon lg:p-12">
         <span className="meta flex items-center gap-2 text-brand-ink"><span className="h-1.5 w-1.5 rounded-full bg-brand-deep" /> Recebido</span>
-        <p className="h3 mt-4">Consulta enviada.</p>
-        <p className="mt-3 text-[16px] leading-relaxed text-carbon/70">Recebemos seus dados e entraremos em contato sobre esta expedição.</p>
+        <p className="h3 mt-4">{soon ? "Contato recebido." : "Consulta enviada."}</p>
+        <p className="mt-3 text-[16px] leading-relaxed text-carbon/70">
+          {soon ? "Avisaremos você quando a data desta expedição for definida." : "Recebemos seus dados e entraremos em contato sobre esta expedição."}
+        </p>
       </div>
     );
   }
@@ -402,7 +421,7 @@ function RegistrationForm({ trip }) {
       </div>
       {status === "error" && <p role="alert" className="mt-5 border-l-2 border-red-700 pl-3 text-[14px] text-red-800">{error}</p>}
       <button type="submit" disabled={status === "sending"} className="btn-dark mt-7 w-full disabled:opacity-60">
-        {status === "sending" ? "Enviando…" : "Consultar participação"} <Arrow className="text-brand" />
+        {status === "sending" ? "Enviando…" : soon ? "Quero ser avisado" : "Consultar participação"} <Arrow className="text-brand" />
       </button>
       <p className="mt-4 text-[13px] leading-relaxed text-carbon/60">
         Seus dados são usados apenas para o contato sobre esta expedição.
@@ -412,7 +431,7 @@ function RegistrationForm({ trip }) {
 }
 
 /** Barra compacta no celular. Some quando o formulário de reserva entra na tela. */
-function MobileActionBar({ trip }) {
+function MobileActionBar({ trip, soon = false }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
     const check = () => {
@@ -428,12 +447,12 @@ function MobileActionBar({ trip }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-4 border-t border-carbon/15 bg-white px-5 py-3 md:hidden">
       <div className="min-w-0">
-        <p className="meta text-[11px] text-carbon/55">{formatTripDate(trip.date_time)}</p>
+        <p className="meta text-[11px] text-carbon/55">{soon ? "Em breve" : formatTripDate(trip.date_time)}</p>
         <p className="truncate text-[15px] font-semibold">{trip.price_car != null ? `${formatBRL(trip.price_car)} por veículo` : trip.name}</p>
       </div>
       <a href="#reserva" className="btn-dark min-h-[44px] flex-none px-4 text-[15px]"
         onClick={() => track("begin_reservation", { expedition_id: trip.id, origin: "mobile_bar" })}>
-        Consultar
+        {soon ? "Avise-me" : "Consultar"}
       </a>
     </div>
   );

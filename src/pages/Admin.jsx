@@ -88,7 +88,8 @@ export const Input = forwardRef(function Input(props, ref){
 });
 export function Label({ htmlFor, children }){ return <label htmlFor={htmlFor} className="block text-sm font-medium mb-1">{children}</label>; }
 
-const isUpcoming = (iso) => new Date(iso).getTime() >= Date.now();
+// Sem data ("Em breve") conta como futuro: fica na tabela de cima, com participantes.
+const isUpcoming = (iso) => !iso || new Date(iso).getTime() >= Date.now();
 const toLocalInputValue = (date) => { if(!date) return ""; const d=new Date(date); const p=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
 
 const parsePriceValue = (value) => {
@@ -281,11 +282,11 @@ function AdminTable({ title, trips, onEdit, onDelete, onChangeStatus, showPartic
                 <th className="py-2 pr-3">Passeio</th><th className="py-2 pr-3">Data</th><th className="py-2 pr-3">Local</th><th className="py-2 pr-3">Fotos</th><th className="py-2 pr-3">Status</th><th className="py-2 text-right">Ações</th>
               </tr></thead>
               <tbody>
-                {trips.slice().sort((a,b)=>new Date(a.date_time)-new Date(b.date_time)).map(t=>(
+                {trips.slice().sort((a,b)=>(a.date_time ? new Date(a.date_time).getTime() : Infinity)-(b.date_time ? new Date(b.date_time).getTime() : Infinity)).map(t=>(
                   <React.Fragment key={t.id}>
                     <tr className="border-b last:border-0">
                       <td className="py-2 pr-3 font-medium">{t.name || <span className="text-neutral-500">(sem nome)</span>}{t.signature && <span className="ml-2 rounded bg-black px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-300">Signature</span>}</td>
-                      <td className="py-2 pr-3">{new Intl.DateTimeFormat("pt-BR",{dateStyle:"medium", timeStyle:"short"}).format(new Date(t.date_time))}</td>
+                      <td className="py-2 pr-3">{t.date_time ? new Intl.DateTimeFormat("pt-BR",{dateStyle:"medium", timeStyle:"short"}).format(new Date(t.date_time)) : <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs font-medium text-neutral-700">Em breve</span>}</td>
                       <td className="py-2 pr-3">{t.location || <span className="text-neutral-500">—</span>}</td>
                       <td className="py-2 pr-3">{(t.images||[]).length}</td>
                       <td className="py-2 pr-3">
@@ -383,7 +384,6 @@ function TripForm({ initial, onSave, onCancel, onUploaded }){
   const handleSubmit = (e)=>{
     e.preventDefault();
     if(!form.name) return alert("Defina um nome.");
-    if(!form.dateTime) return alert("Defina data e hora.");
     const { details: rawDetails, ...rest } = form;
     const details = cleanDetails(rawDetails);
     // O dossiê só vai no envio quando existe (ou existia) conteúdo: assim o
@@ -403,7 +403,15 @@ function TripForm({ initial, onSave, onCancel, onUploaded }){
     <form className="grid gap-3" onSubmit={handleSubmit}>
       <div><Label>Nome do passeio</Label><Input value={form.name} onChange={e=>update({name:e.target.value})} placeholder="Ex.: Estrada-Parque Serra da Canastra" /></div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div><Label>Data e hora</Label><Input type="datetime-local" value={toLocalInputValue(form.dateTime)} onChange={e=>update({dateTime: new Date(e.target.value).toISOString()})} /></div>
+          <div>
+            <Label>Data e hora</Label>
+            <Input type="datetime-local" value={toLocalInputValue(form.dateTime)} onChange={e=>update({dateTime: e.target.value ? new Date(e.target.value).toISOString() : null})} />
+            {/* Sem data, o roteiro aparece no site como "Em breve", sem compromisso de data. */}
+            <div className="mt-1 flex items-center justify-between gap-3 text-xs text-neutral-600">
+              <span>{form.dateTime ? "Deixe em branco para anunciar como “Em breve”." : "Sem data: aparece no site como “Em breve”."}</span>
+              {form.dateTime && <button type="button" className="font-medium text-neutral-900 underline" onClick={()=>update({dateTime:null})}>Limpar data</button>}
+            </div>
+          </div>
           <div><Label>Local</Label><Input value={form.location} onChange={e=>update({location:e.target.value})} placeholder="Cidade / Região" /></div>
         </div>
         <div>
